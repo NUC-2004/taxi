@@ -90,7 +90,7 @@ public sealed class TutorialStepController : MonoBehaviour
         if (!result.WasChosen)
         {
             hasExplainedNoResponse = true;
-            uiLayer.SetTutorialText("No response lowers affection. The conversation keeps moving.");
+        uiLayer.SetTutorialText("No response lowers engagement. The conversation keeps moving.");
         }
         else if (!hasExplainedNoResponse)
         {

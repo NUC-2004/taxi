@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,15 +16,28 @@ using UnityEngine.InputSystem.UI;
 [ExecuteAlways]
 public sealed class DialogueUILayer : MonoBehaviour
 {
+    private enum ExpressionMood
+    {
+        Calm,
+        Happy,
+        Angry
+    }
+
     [Header("Authoring")]
     [SerializeField] private bool buildUiIfMissingOnStart = true;
     [SerializeField] private Canvas authoredCanvas;
     [SerializeField] private bool keepEditableHierarchyInEditMode = true;
 
     [SerializeField] private DialogueSequenceManager dialogueManager;
-    [SerializeField] private string portraitResourcePath = "Portraits/Female Sprite by Sutemo";
+    [SerializeField] private string windowBackgroundResourcePath = "Level0UI/WindowBackground";
+    [SerializeField] private string cabinResourcePath = "Level0UI/CabinInterior";
+    [SerializeField] private string calmExpressionResourcePath = "Level0UI/VeraCalm";
+    [SerializeField] private string happyExpressionResourcePath = "Level0UI/VeraHappy";
+    [SerializeField] private string angryExpressionResourcePath = "Level0UI/VeraAngry";
 
     private static readonly Color OptionNormalColor = new Color(0.25f, 0.3f, 0.31f, 1f);
+    private static readonly Color OptionKeywordColor = new Color(0.45f, 0.32f, 0.16f, 1f);
+    private static readonly Color OptionUnlockedColor = new Color(0.18f, 0.34f, 0.36f, 1f);
     private static readonly Color OptionSelectedColor = new Color(0.95f, 0.82f, 0.22f, 1f);
 
     private Text phaseText;
@@ -31,19 +45,32 @@ public sealed class DialogueUILayer : MonoBehaviour
     private Text responseHintText;
     private Text tutorialText;
     private Text affectionValueText;
-    private Text portraitFallbackText;
+    private Text expressionFallbackText;
     private Slider affectionSlider;
+    private RectTransform headerRoot;
+    private RectTransform dialoguePanelRoot;
+    private RectTransform responsePanelRoot;
+    private RectTransform tutorialPanelRoot;
+    private RectTransform expressionPanelRoot;
     private RectTransform timerBarRoot;
     private RectTransform timerLeftFill;
     private RectTransform timerRightFill;
     private RectTransform optionsRoot;
     private RectTransform pauseMenuRoot;
-    private Image portraitImage;
+    private RectTransform completionMenuRoot;
+    private Image windowBackgroundImage;
+    private Image cabinImage;
+    private Image expressionImage;
     private readonly List<Button> optionButtons = new List<Button>();
     private readonly List<Text> optionButtonLabels = new List<Text>();
     private readonly List<PlayerResponseOption> activeOptions = new List<PlayerResponseOption>();
     private int selectedOptionIndex = -1;
     private bool isPaused;
+    private bool isMouseConfirming;
+    private string lastNpcDialogueText = string.Empty;
+    private int currentAffectionValue;
+    private bool hasSeenAffectionValue;
+    private ExpressionMood currentExpressionMood = ExpressionMood.Calm;
 
     public void Initialize(DialogueSequenceManager manager)
     {
@@ -54,6 +81,9 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         ResolveReferencesFromHierarchy();
+        EnsureCompletionMenuExists();
+        ApplyResponsiveLayout();
+        RefreshLevel0Visuals();
         Subscribe();
     }
 
@@ -90,19 +120,26 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private void Start()
     {
+        EnsureEventSystem();
+        EnsureSceneCamera();
+
         if (dialogueManager == null)
         {
             dialogueManager = GetComponent<DialogueSequenceManager>();
         }
 
-        if (authoredCanvas == null && buildUiIfMissingOnStart)
+        if (NeedsUiRebuildAtRuntime())
         {
             BuildRuntimeUi();
         }
 
         ResolveReferencesFromHierarchy();
+        EnsureCompletionMenuExists();
+        ApplyResponsiveLayout();
+        RefreshLevel0Visuals();
         AutoConfigurePauseButtonsByLabel();
         RebindPauseButtonsInHierarchy();
+        ValidatePauseBindings();
         Subscribe();
     }
 
@@ -136,15 +173,64 @@ public sealed class DialogueUILayer : MonoBehaviour
             return;
         }
 
-        if (authoredCanvas != null || transform.Find("Level0 Dialogue Canvas") != null)
+        if (NeedsUiRebuildInEditor())
         {
-            return;
+            BuildRuntimeUi();
+            EditorSceneManager.MarkSceneDirty(gameObject.scene);
         }
-
-        BuildRuntimeUi();
-        EditorSceneManager.MarkSceneDirty(gameObject.scene);
     }
 #endif
+
+    private bool NeedsUiRebuildAtRuntime()
+    {
+        if (!buildUiIfMissingOnStart)
+        {
+            return false;
+        }
+
+        return NeedsUiRebuildCore();
+    }
+
+    private bool NeedsUiRebuildInEditor()
+    {
+        if (!keepEditableHierarchyInEditMode)
+        {
+            return false;
+        }
+
+        return NeedsUiRebuildCore();
+    }
+
+    private bool NeedsUiRebuildCore()
+    {
+        Transform canvasTransform = transform.Find("Level0 Dialogue Canvas");
+        if (canvasTransform == null)
+        {
+            return true;
+        }
+
+        if (canvasTransform.Find("Cabin Background") == null)
+        {
+            return true;
+        }
+
+        if (canvasTransform.Find("Window Background") == null)
+        {
+            return true;
+        }
+
+        if (canvasTransform.Find("Expression Area/Expression Image") == null)
+        {
+            return true;
+        }
+
+        if (canvasTransform.Find("NPC Dialogue Area/Portrait Area") != null)
+        {
+            return true;
+        }
+
+        return false;
+    }
 
     private void OnDisable()
     {
@@ -217,47 +303,55 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
 
-        Image background = CreateImage("Background", canvasRect, new Color(0.08f, 0.09f, 0.1f, 1f));
+        Image background = CreateImage("Background", canvasRect, new Color(0.03f, 0.04f, 0.05f, 1f));
         Stretch(background.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-        RectTransform header = CreatePanel("Header", canvasRect, new Color(0.13f, 0.16f, 0.17f, 0.95f));
-        Stretch(header, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(48f, -118f), new Vector2(-48f, -32f));
+        windowBackgroundImage = CreateImage("Window Background", canvasRect, Color.white);
+        windowBackgroundImage.preserveAspect = false;
+        Stretch(windowBackgroundImage.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+        cabinImage = CreateImage("Cabin Background", canvasRect, Color.white);
+        cabinImage.preserveAspect = false;
+        Stretch(cabinImage.rectTransform, new Vector2(0f, -0.02f), new Vector2(1f, 0.72f), Vector2.zero, Vector2.zero);
+
+        RectTransform header = CreatePanel("Header", canvasRect, new Color(0.08f, 0.1f, 0.12f, 0.82f));
+        Stretch(header, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -126f), new Vector2(620f, -28f));
 
         phaseText = CreateText("Phase Text", header, "Phase: -", 28, TextAnchor.MiddleLeft);
-        Stretch(phaseText.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.38f, 0.5f), new Vector2(24f, -34f), new Vector2(-12f, 34f));
+        Stretch(phaseText.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.32f, 0.5f), new Vector2(20f, -30f), new Vector2(-12f, 30f));
 
         affectionSlider = CreateSlider("Affection Slider", header);
-        Stretch(affectionSlider.GetComponent<RectTransform>(), new Vector2(0.42f, 0.5f), new Vector2(0.78f, 0.5f), new Vector2(0f, -16f), new Vector2(0f, 16f));
+        Stretch(affectionSlider.GetComponent<RectTransform>(), new Vector2(0.36f, 0.5f), new Vector2(0.72f, 0.5f), new Vector2(0f, -14f), new Vector2(0f, 14f));
 
-        affectionValueText = CreateText("Affection Value", header, "Affection: -", 24, TextAnchor.MiddleLeft);
-        Stretch(affectionValueText.rectTransform, new Vector2(0.8f, 0.5f), new Vector2(1f, 0.5f), new Vector2(10f, -34f), new Vector2(-24f, 34f));
+        affectionValueText = CreateText("Affection Value", header, "Engagement: -", 24, TextAnchor.MiddleLeft);
+        Stretch(affectionValueText.rectTransform, new Vector2(0.75f, 0.5f), new Vector2(1f, 0.5f), new Vector2(10f, -30f), new Vector2(-18f, 30f));
 
-        RectTransform dialoguePanel = CreatePanel("NPC Dialogue Area", canvasRect, new Color(0.16f, 0.17f, 0.17f, 0.96f));
-        Stretch(dialoguePanel, new Vector2(0f, 0.48f), new Vector2(1f, 0.82f), new Vector2(80f, -20f), new Vector2(-80f, -20f));
+        RectTransform dialoguePanel = CreatePanel("NPC Dialogue Area", canvasRect, new Color(0.07f, 0.09f, 0.11f, 0.8f));
+        Stretch(dialoguePanel, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(44f, 440f), new Vector2(1040f, 760f));
 
-        RectTransform portraitPanel = CreatePanel("Portrait Area", dialoguePanel, new Color(0.13f, 0.14f, 0.15f, 1f));
-        Stretch(portraitPanel, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(24f, 24f), new Vector2(344f, -24f));
+        RectTransform expressionPanel = CreatePanel("Expression Area", canvasRect, new Color(0f, 0f, 0f, 0f));
+        Stretch(expressionPanel, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-630f, -320f), new Vector2(-34f, -24f));
 
-        portraitImage = CreateImage("Portrait Image", portraitPanel, Color.white);
-        portraitImage.preserveAspect = true;
-        Stretch(portraitImage.rectTransform, Vector2.zero, Vector2.one, new Vector2(16f, 16f), new Vector2(-16f, -16f));
+        expressionImage = CreateImage("Expression Image", expressionPanel, Color.white);
+        expressionImage.preserveAspect = true;
+        Stretch(expressionImage.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
 
-        portraitFallbackText = CreateText("Portrait Fallback", portraitPanel, "Portrait importing...", 24, TextAnchor.MiddleCenter);
-        Stretch(portraitFallbackText.rectTransform, Vector2.zero, Vector2.one, new Vector2(20f, 20f), new Vector2(-20f, -20f));
+        expressionFallbackText = CreateText("Expression Fallback", expressionPanel, "Expression importing...", 24, TextAnchor.MiddleCenter);
+        Stretch(expressionFallbackText.rectTransform, Vector2.zero, Vector2.one, new Vector2(20f, 20f), new Vector2(-20f, -20f));
 
         npcText = CreateText("NPC Text", dialoguePanel, string.Empty, 34, TextAnchor.MiddleLeft);
         npcText.horizontalOverflow = HorizontalWrapMode.Wrap;
         npcText.verticalOverflow = VerticalWrapMode.Overflow;
-        Stretch(npcText.rectTransform, Vector2.zero, Vector2.one, new Vector2(380f, 28f), new Vector2(-36f, -28f));
+        Stretch(npcText.rectTransform, Vector2.zero, Vector2.one, new Vector2(26f, 28f), new Vector2(-30f, -26f));
 
-        RectTransform responsePanel = CreatePanel("Player Response Area", canvasRect, new Color(0.11f, 0.12f, 0.13f, 0.96f));
-        Stretch(responsePanel, new Vector2(0f, 0.13f), new Vector2(1f, 0.44f), new Vector2(80f, -8f), new Vector2(-80f, -8f));
+        RectTransform responsePanel = CreatePanel("Player Response Area", canvasRect, new Color(0.08f, 0.09f, 0.1f, 0.86f));
+        Stretch(responsePanel, new Vector2(0.1f, 0.14f), new Vector2(0.9f, 0.38f), Vector2.zero, Vector2.zero);
 
         responseHintText = CreateText("Response Hint Text", responsePanel, "Wait for your turn", 26, TextAnchor.MiddleLeft);
-        Stretch(responseHintText.rectTransform, new Vector2(0f, 0.82f), new Vector2(1f, 1f), new Vector2(26f, 0f), new Vector2(-26f, -6f));
+        Stretch(responseHintText.rectTransform, new Vector2(0f, 0.8f), new Vector2(1f, 1f), new Vector2(24f, 0f), new Vector2(-24f, -8f));
 
-        timerBarRoot = CreatePanel("Response Timer Bar", responsePanel, new Color(0.05f, 0.06f, 0.06f, 1f));
-        Stretch(timerBarRoot, new Vector2(0f, 0.72f), new Vector2(1f, 0.82f), new Vector2(26f, 4f), new Vector2(-26f, -4f));
+        timerBarRoot = CreatePanel("Response Timer Bar", responsePanel, new Color(0.05f, 0.06f, 0.06f, 0.94f));
+        Stretch(timerBarRoot, new Vector2(0.2f, 0.66f), new Vector2(0.8f, 0.76f), Vector2.zero, Vector2.zero);
 
         Image centerMarker = CreateImage("Center Marker", timerBarRoot, new Color(1f, 1f, 1f, 0.35f));
         Stretch(centerMarker.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(-2f, 0f), new Vector2(2f, 0f));
@@ -268,21 +362,23 @@ public sealed class DialogueUILayer : MonoBehaviour
         timerBarRoot.gameObject.SetActive(false);
 
         optionsRoot = CreatePanel("Options Root", responsePanel, new Color(0f, 0f, 0f, 0f));
-        Stretch(optionsRoot, Vector2.zero, new Vector2(1f, 0.7f), new Vector2(24f, 18f), new Vector2(-24f, -4f));
+        Stretch(optionsRoot, Vector2.zero, new Vector2(1f, 0.62f), new Vector2(20f, 16f), new Vector2(-20f, -8f));
 
-        RectTransform tutorialPanel = CreatePanel("Tutorial Area", canvasRect, new Color(0.18f, 0.18f, 0.15f, 0.95f));
-        Stretch(tutorialPanel, Vector2.zero, new Vector2(1f, 0.1f), new Vector2(80f, 32f), new Vector2(-80f, -8f));
+        RectTransform tutorialPanel = CreatePanel("Tutorial Area", canvasRect, new Color(0.09f, 0.08f, 0.06f, 0.78f));
+        Stretch(tutorialPanel, new Vector2(0.04f, 0.4f), new Vector2(0.62f, 0.46f), Vector2.zero, Vector2.zero);
 
         tutorialText = CreateText("Tutorial Text", tutorialPanel, string.Empty, 24, TextAnchor.MiddleLeft);
         Stretch(tutorialText.rectTransform, Vector2.zero, Vector2.one, new Vector2(24f, 8f), new Vector2(-24f, -8f));
 
         pauseMenuRoot = BuildPauseMenu(canvasRect);
+        completionMenuRoot = BuildCompletionMenu(canvasRect);
 
         HideOptions();
-        RefreshPortrait();
+        RefreshLevel0Visuals();
         ResolveReferencesFromHierarchy();
         AutoConfigurePauseButtonsByLabel();
         RebindPauseButtonsInHierarchy();
+        ValidatePauseBindings();
     }
 
     private void RemoveExistingRuntimeCanvas()
@@ -311,9 +407,16 @@ public sealed class DialogueUILayer : MonoBehaviour
             authoredCanvas = GetComponentInChildren<Canvas>(true);
         }
 
+        headerRoot = FindRect("Level0 Dialogue Canvas/Header");
+        dialoguePanelRoot = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area");
+        responsePanelRoot = FindRect("Level0 Dialogue Canvas/Player Response Area");
+        tutorialPanelRoot = FindRect("Level0 Dialogue Canvas/Tutorial Area");
+        expressionPanelRoot = FindRect("Level0 Dialogue Canvas/Expression Area");
         phaseText = FindText("Level0 Dialogue Canvas/Header/Phase Text");
         affectionSlider = FindRect("Level0 Dialogue Canvas/Header/Affection Slider")?.GetComponent<Slider>();
         affectionValueText = FindText("Level0 Dialogue Canvas/Header/Affection Value");
+        windowBackgroundImage = FindRect("Level0 Dialogue Canvas/Window Background")?.GetComponent<Image>();
+        cabinImage = FindRect("Level0 Dialogue Canvas/Cabin Background")?.GetComponent<Image>();
         npcText = FindText("Level0 Dialogue Canvas/NPC Dialogue Area/NPC Text");
         responseHintText = FindText("Level0 Dialogue Canvas/Player Response Area/Response Hint Text");
         timerBarRoot = FindRect("Level0 Dialogue Canvas/Player Response Area/Response Timer Bar");
@@ -322,8 +425,75 @@ public sealed class DialogueUILayer : MonoBehaviour
         optionsRoot = FindRect("Level0 Dialogue Canvas/Player Response Area/Options Root");
         tutorialText = FindText("Level0 Dialogue Canvas/Tutorial Area/Tutorial Text");
         pauseMenuRoot = FindRect("Level0 Dialogue Canvas/Pause Overlay");
-        portraitImage = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area/Portrait Area/Portrait Image")?.GetComponent<Image>();
-        portraitFallbackText = FindText("Level0 Dialogue Canvas/NPC Dialogue Area/Portrait Area/Portrait Fallback");
+        completionMenuRoot = FindRect("Level0 Dialogue Canvas/Completion Overlay");
+        expressionImage = FindRect("Level0 Dialogue Canvas/Expression Area/Expression Image")?.GetComponent<Image>();
+        expressionFallbackText = FindText("Level0 Dialogue Canvas/Expression Area/Expression Fallback");
+    }
+
+    private void EnsureCompletionMenuExists()
+    {
+        if (completionMenuRoot != null || authoredCanvas == null)
+        {
+            return;
+        }
+
+        RectTransform canvasRect = authoredCanvas.GetComponent<RectTransform>();
+        if (canvasRect == null)
+        {
+            return;
+        }
+
+        completionMenuRoot = BuildCompletionMenu(canvasRect);
+        AutoConfigurePauseButtonsByLabel();
+        RebindPauseButtonsInHierarchy();
+    }
+
+    private void OnRectTransformDimensionsChange()
+    {
+        if (!isActiveAndEnabled)
+        {
+            return;
+        }
+
+        ApplyResponsiveLayout();
+    }
+
+    private void ApplyResponsiveLayout()
+    {
+        if (windowBackgroundImage != null)
+        {
+            Stretch(windowBackgroundImage.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+        }
+
+        if (cabinImage != null)
+        {
+            Stretch(cabinImage.rectTransform, new Vector2(0f, -0.02f), new Vector2(1f, 0.72f), Vector2.zero, Vector2.zero);
+        }
+
+        if (headerRoot != null)
+        {
+            Stretch(headerRoot, new Vector2(0.012f, 0.91f), new Vector2(0.988f, 0.985f), Vector2.zero, Vector2.zero);
+        }
+
+        if (dialoguePanelRoot != null)
+        {
+            Stretch(dialoguePanelRoot, new Vector2(0.03f, 0.49f), new Vector2(0.63f, 0.78f), Vector2.zero, Vector2.zero);
+        }
+
+        if (expressionPanelRoot != null)
+        {
+            Stretch(expressionPanelRoot, new Vector2(0.69f, 0.55f), new Vector2(0.98f, 0.98f), Vector2.zero, Vector2.zero);
+        }
+
+        if (responsePanelRoot != null)
+        {
+            Stretch(responsePanelRoot, new Vector2(0.08f, 0.11f), new Vector2(0.92f, 0.34f), Vector2.zero, Vector2.zero);
+        }
+
+        if (tutorialPanelRoot != null)
+        {
+            Stretch(tutorialPanelRoot, new Vector2(0.04f, 0.41f), new Vector2(0.62f, 0.47f), Vector2.zero, Vector2.zero);
+        }
     }
 
     private void AutoConfigurePauseButtonsByLabel()
@@ -369,7 +539,10 @@ public sealed class DialogueUILayer : MonoBehaviour
             case "Continue":
                 return PauseMenuButtonAction.ActionType.Resume;
             case "Return to Main Menu":
+            case "回到主菜单":
                 return PauseMenuButtonAction.ActionType.ReturnToMainMenu;
+            case "继续游戏":
+                return PauseMenuButtonAction.ActionType.ContinueGame;
             default:
                 return null;
         }
@@ -421,20 +594,52 @@ public sealed class DialogueUILayer : MonoBehaviour
         {
             npcText.text = text;
         }
+
+        if (IsQuotedDialogue(text))
+        {
+            lastNpcDialogueText = text;
+        }
     }
 
     private void HandleResponseStarted(IReadOnlyList<PlayerResponseOption> options)
     {
+        if (npcText != null && string.IsNullOrWhiteSpace(npcText.text) && !string.IsNullOrWhiteSpace(lastNpcDialogueText))
+        {
+            npcText.text = lastNpcDialogueText;
+        }
+
         ShowOptions(options);
     }
 
     private void HandleResponseTimerChanged(float remaining, float duration)
     {
+        SetTimerVisible(duration > 0f);
         SetTimerBar(duration <= 0f ? 0f : remaining / duration);
     }
 
     private void HandleAffectionChanged(int value, int min, int max)
     {
+        int previousAffectionValue = currentAffectionValue;
+        currentAffectionValue = value;
+
+        if (!hasSeenAffectionValue)
+        {
+            hasSeenAffectionValue = true;
+            currentExpressionMood = ExpressionMood.Calm;
+        }
+        else if (value > previousAffectionValue)
+        {
+            currentExpressionMood = ExpressionMood.Happy;
+        }
+        else if (value < previousAffectionValue)
+        {
+            currentExpressionMood = ExpressionMood.Angry;
+        }
+        else
+        {
+            currentExpressionMood = ExpressionMood.Calm;
+        }
+
         if (affectionSlider != null)
         {
             affectionSlider.minValue = min;
@@ -444,8 +649,10 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (affectionValueText != null)
         {
-            affectionValueText.text = "Affection: " + value + "/" + max;
+            affectionValueText.text = "Engagement: " + value + "/" + max;
         }
+
+        UpdateExpressionSprite();
     }
 
     private void HandleResponseResolved(ResponseResult result)
@@ -466,6 +673,11 @@ public sealed class DialogueUILayer : MonoBehaviour
         {
             phaseText.text = "Phase: Complete";
         }
+
+        if (SceneManager.GetActiveScene().name == "Level0")
+        {
+            ShowCompletionMenu();
+        }
     }
 
     private void ShowOptions(IReadOnlyList<PlayerResponseOption> options)
@@ -475,16 +687,18 @@ public sealed class DialogueUILayer : MonoBehaviour
         activeOptions.Clear();
         activeOptions.AddRange(options);
         selectedOptionIndex = 0;
-        SetTimerVisible(true);
-        SetTimerBar(1f);
+        bool useTimer = dialogueManager != null && dialogueManager.CurrentResponseDurationSeconds > 0f;
+        SetTimerVisible(useTimer);
+        SetTimerBar(useTimer ? 1f : 0f);
 
         if (responseHintText != null)
         {
-            responseHintText.text = "Use Up/Down to choose, Space to confirm";
+            responseHintText.text = "Use Up/Down to choose, Space or Enter to confirm";
         }
 
         for (int i = 0; i < options.Count; i++)
         {
+            int optionIndex = i;
             PlayerResponseOption option = options[i];
             Button button = CreateButton("Option " + (i + 1), optionsRoot, option.placeholderText);
             RectTransform rect = button.GetComponent<RectTransform>();
@@ -493,9 +707,10 @@ public sealed class DialogueUILayer : MonoBehaviour
             float top = 1f - i * (buttonHeight + spacing);
             float bottom = top - buttonHeight;
             Stretch(rect, new Vector2(0f, bottom), new Vector2(1f, top), Vector2.zero, Vector2.zero);
-            button.onClick.AddListener(() => dialogueManager.ChooseResponse(option));
+            button.onClick.AddListener(() => HandleMouseOptionClicked(optionIndex));
+            Text label = EnsureButtonLabel(button, option.placeholderText);
             optionButtons.Add(button);
-            optionButtonLabels.Add(button.GetComponentInChildren<Text>());
+            optionButtonLabels.Add(label);
         }
 
         RefreshOptionSelection();
@@ -520,6 +735,47 @@ public sealed class DialogueUILayer : MonoBehaviour
         optionButtonLabels.Clear();
         activeOptions.Clear();
         selectedOptionIndex = -1;
+        isMouseConfirming = false;
+    }
+
+    private void HandleMouseOptionClicked(int optionIndex)
+    {
+        if (isMouseConfirming ||
+            dialogueManager == null ||
+            dialogueManager.CurrentPhase != DialoguePhase.PlayerResponse ||
+            optionIndex < 0 ||
+            optionIndex >= activeOptions.Count)
+        {
+            return;
+        }
+
+        StartCoroutine(ConfirmMouseOptionAfterHighlight(optionIndex));
+    }
+
+    private IEnumerator ConfirmMouseOptionAfterHighlight(int optionIndex)
+    {
+        isMouseConfirming = true;
+        SelectOption(optionIndex);
+
+        for (int i = 0; i < optionButtons.Count; i++)
+        {
+            if (optionButtons[i] != null)
+            {
+                optionButtons[i].interactable = false;
+            }
+        }
+
+        yield return new WaitForSecondsRealtime(0.12f);
+
+        if (dialogueManager != null &&
+            dialogueManager.CurrentPhase == DialoguePhase.PlayerResponse &&
+            optionIndex >= 0 &&
+            optionIndex < activeOptions.Count)
+        {
+            dialogueManager.ChooseResponse(activeOptions[optionIndex]);
+        }
+
+        isMouseConfirming = false;
     }
 
     private RectTransform BuildPauseMenu(RectTransform canvasRect)
@@ -539,16 +795,54 @@ public sealed class DialogueUILayer : MonoBehaviour
         desc.color = new Color(0.85f, 0.87f, 0.88f, 1f);
         Stretch(desc.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(32f, -128f), new Vector2(-32f, -72f));
 
-        Button continueButton = CreatePauseButton("Continue Button", panel, "Continue");
+        Button continueButton = CreatePauseButton("Continue Button", panel, "Continue", PauseMenuButtonAction.ActionType.Resume);
         Stretch(continueButton.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(36f, -10f), new Vector2(-36f, 58f));
-        continueButton.onClick.AddListener(ResumeFromPauseMenu);
 
-        Button mainMenuButton = CreatePauseButton("Main Menu Button", panel, "Return to Main Menu");
+        Button mainMenuButton = CreatePauseButton("Main Menu Button", panel, "Return to Main Menu", PauseMenuButtonAction.ActionType.ReturnToMainMenu);
         Stretch(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(36f, -102f), new Vector2(-36f, -34f));
-        mainMenuButton.onClick.AddListener(ReturnToMainMenu);
 
         overlay.gameObject.SetActive(false);
         return overlay;
+    }
+
+    private RectTransform BuildCompletionMenu(RectTransform canvasRect)
+    {
+        RectTransform overlay = CreatePanel("Completion Overlay", canvasRect, new Color(0f, 0f, 0f, 0.58f));
+        Stretch(overlay, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+
+        RectTransform panel = CreatePanel("Completion Panel", overlay, new Color(0.12f, 0.14f, 0.15f, 0.98f));
+        Stretch(panel, new Vector2(0.33f, 0.32f), new Vector2(0.67f, 0.68f), Vector2.zero, Vector2.zero);
+
+        Text title = CreateText("Completion Title", panel, "Level 0 Complete", 38, TextAnchor.UpperCenter);
+        Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -58f), new Vector2(0f, -10f));
+
+        Text desc = CreateText("Completion Text", panel, "The first ride is over. Choose your next stop.", 24, TextAnchor.UpperCenter);
+        desc.horizontalOverflow = HorizontalWrapMode.Wrap;
+        desc.verticalOverflow = VerticalWrapMode.Overflow;
+        desc.color = new Color(0.86f, 0.88f, 0.88f, 1f);
+        Stretch(desc.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(32f, -132f), new Vector2(-32f, -74f));
+
+        Button continueButton = CreatePauseButton("Continue Game Button", panel, "继续游戏", PauseMenuButtonAction.ActionType.ContinueGame);
+        Stretch(continueButton.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(36f, -10f), new Vector2(-36f, 58f));
+
+        Button mainMenuButton = CreatePauseButton("Completion Main Menu Button", panel, "回到主菜单", PauseMenuButtonAction.ActionType.ReturnToMainMenu);
+        Stretch(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(36f, -102f), new Vector2(-36f, -34f));
+
+        overlay.gameObject.SetActive(false);
+        return overlay;
+    }
+
+    private void ShowCompletionMenu()
+    {
+        if (completionMenuRoot == null)
+        {
+            EnsureCompletionMenuExists();
+        }
+
+        if (completionMenuRoot != null)
+        {
+            completionMenuRoot.gameObject.SetActive(true);
+        }
     }
 
     private void TogglePauseMenu()
@@ -569,7 +863,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         pauseMenuRoot.gameObject.SetActive(true);
     }
 
-    private void ResumeFromPauseMenu()
+    public void ResumeFromPauseMenu()
     {
         isPaused = false;
         Time.timeScale = 1f;
@@ -579,10 +873,46 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
     }
 
-    private void ReturnToMainMenu()
+    public void ReturnToMainMenu()
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene("SampleScene");
+    }
+
+    public void ContinueGame()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("Level1");
+    }
+
+    private void ValidatePauseBindings()
+    {
+        Button[] buttons = GetComponentsInChildren<Button>(true);
+        bool hasContinue = false;
+        bool hasReturn = false;
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Text label = buttons[i].GetComponentInChildren<Text>(true);
+            if (label == null)
+            {
+                continue;
+            }
+
+            if (label.text == "Continue")
+            {
+                hasContinue = buttons[i].GetComponent<PauseMenuButtonAction>() != null;
+            }
+            else if (label.text == "Return to Main Menu")
+            {
+                hasReturn = buttons[i].GetComponent<PauseMenuButtonAction>() != null;
+            }
+        }
+
+        if (!hasContinue || !hasReturn)
+        {
+            Debug.LogWarning("Pause menu binding self-check failed. Rebuild the Level0 editable hierarchy.");
+        }
     }
 
     private void SelectOption(int index)
@@ -604,42 +934,146 @@ public sealed class DialogueUILayer : MonoBehaviour
             Image image = optionButtons[i].GetComponent<Image>();
             if (image != null)
             {
-                image.color = i == selectedOptionIndex ? OptionSelectedColor : OptionNormalColor;
+                image.color = i == selectedOptionIndex ? OptionSelectedColor : GetOptionBaseColor(i);
             }
 
             if (i < optionButtonLabels.Count && optionButtonLabels[i] != null)
             {
+                if (i < activeOptions.Count)
+                {
+                    optionButtonLabels[i].text = activeOptions[i].placeholderText;
+                }
+
                 optionButtonLabels[i].color = i == selectedOptionIndex
                     ? new Color(0.12f, 0.1f, 0.02f, 1f)
                     : Color.white;
+                optionButtonLabels[i].gameObject.SetActive(true);
             }
         }
     }
 
-    private void RefreshPortrait()
+    private static Text EnsureButtonLabel(Button button, string labelText)
     {
-        if (portraitImage == null)
+        Text label = button.GetComponentInChildren<Text>(true);
+        if (label == null)
+        {
+            label = CreateText("Label", button.transform, labelText, 26, TextAnchor.MiddleCenter);
+            Stretch(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(12f, 4f), new Vector2(-12f, -4f));
+        }
+
+        label.text = labelText;
+        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        label.fontSize = 26;
+        label.resizeTextForBestFit = true;
+        label.resizeTextMinSize = 18;
+        label.resizeTextMaxSize = 26;
+        label.horizontalOverflow = HorizontalWrapMode.Wrap;
+        label.verticalOverflow = VerticalWrapMode.Truncate;
+        label.alignment = TextAnchor.MiddleCenter;
+        label.raycastTarget = false;
+        return label;
+    }
+
+    private Color GetOptionBaseColor(int optionIndex)
+    {
+        if (optionIndex >= 0 && optionIndex < activeOptions.Count)
+        {
+            PlayerResponseOption option = activeOptions[optionIndex];
+            if (option.isUnlockedOption)
+            {
+                return OptionUnlockedColor;
+            }
+
+            if (option.isKeywordOption)
+            {
+                return OptionKeywordColor;
+            }
+        }
+
+        return OptionNormalColor;
+    }
+
+    private void RefreshLevel0Visuals()
+    {
+        RefreshWindowBackground();
+        RefreshCabinBackground();
+        UpdateExpressionSprite();
+    }
+
+    private void RefreshWindowBackground()
+    {
+        if (windowBackgroundImage == null)
         {
             return;
         }
 
-        Sprite portraitSprite = LoadPortraitSprite();
-        portraitImage.sprite = portraitSprite;
-        portraitImage.enabled = portraitSprite != null;
+        Sprite sprite = LoadSpriteFromResourcePath(windowBackgroundResourcePath);
+        windowBackgroundImage.sprite = sprite;
+        windowBackgroundImage.enabled = sprite != null;
+    }
 
-        if (portraitFallbackText != null)
+    private void RefreshCabinBackground()
+    {
+        if (cabinImage == null)
         {
-            portraitFallbackText.gameObject.SetActive(portraitSprite == null);
-            if (portraitSprite == null)
+            return;
+        }
+
+        Sprite sprite = LoadSpriteFromResourcePath(cabinResourcePath);
+        cabinImage.sprite = sprite;
+        cabinImage.enabled = sprite != null;
+    }
+
+    private void UpdateExpressionSprite()
+    {
+        if (expressionImage == null)
+        {
+            return;
+        }
+
+        string path = calmExpressionResourcePath;
+        switch (currentExpressionMood)
+        {
+            case ExpressionMood.Happy:
+                path = happyExpressionResourcePath;
+                break;
+            case ExpressionMood.Angry:
+                path = angryExpressionResourcePath;
+                break;
+            default:
+                path = calmExpressionResourcePath;
+                break;
+        }
+
+        Sprite sprite = LoadSpriteFromResourcePath(path);
+        expressionImage.sprite = sprite;
+        expressionImage.enabled = sprite != null;
+        expressionImage.color = Color.white;
+
+        if (expressionFallbackText != null)
+        {
+            expressionFallbackText.gameObject.SetActive(sprite == null);
+            if (sprite == null)
             {
-                portraitFallbackText.text = "Importing portrait...\nIf it stays like this, reselect the PSD as Sprite (2D and UI).";
+                expressionFallbackText.text = "Expression importing...\nIf it stays blank, set the PNG import type to Sprite (2D and UI).";
             }
         }
     }
 
-    private Sprite LoadPortraitSprite()
+    private Sprite LoadSpriteFromResourcePath(string resourcePath)
     {
-        Sprite[] sprites = Resources.LoadAll<Sprite>(portraitResourcePath);
+        if (string.IsNullOrWhiteSpace(resourcePath))
+        {
+            return null;
+        }
+
+        Sprite directSprite = Resources.Load<Sprite>(resourcePath);
+        if (directSprite != null)
+        {
+            return directSprite;
+        }
+
+        Sprite[] sprites = Resources.LoadAll<Sprite>(resourcePath);
         if (sprites != null && sprites.Length > 0)
         {
             Sprite bestSprite = sprites[0];
@@ -657,7 +1091,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             return bestSprite;
         }
 
-        Texture2D texture = Resources.Load<Texture2D>(portraitResourcePath);
+        Texture2D texture = Resources.Load<Texture2D>(resourcePath);
         if (texture == null)
         {
             return null;
@@ -672,7 +1106,7 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private void UpdatePortraitPhaseTint(DialoguePhase phase)
     {
-        if (portraitImage == null || portraitImage.sprite == null)
+        if (expressionImage == null || expressionImage.sprite == null)
         {
             return;
         }
@@ -680,16 +1114,16 @@ public sealed class DialogueUILayer : MonoBehaviour
         switch (phase)
         {
             case DialoguePhase.NpcSpeaking:
-                portraitImage.color = Color.white;
+                expressionImage.color = Color.white;
                 break;
             case DialoguePhase.PlayerResponse:
-                portraitImage.color = new Color(1f, 0.94f, 0.86f, 1f);
+                expressionImage.color = new Color(1f, 0.96f, 0.9f, 1f);
                 break;
             case DialoguePhase.Complete:
-                portraitImage.color = new Color(0.82f, 0.82f, 0.82f, 1f);
+                expressionImage.color = new Color(0.9f, 0.9f, 0.9f, 1f);
                 break;
             default:
-                portraitImage.color = Color.white;
+                expressionImage.color = Color.white;
                 break;
         }
     }
@@ -737,9 +1171,14 @@ public sealed class DialogueUILayer : MonoBehaviour
     private static bool WasConfirmPressed()
     {
 #if ENABLE_INPUT_SYSTEM
-        return Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame;
+        return Keyboard.current != null &&
+               (Keyboard.current.spaceKey.wasPressedThisFrame ||
+                Keyboard.current.enterKey.wasPressedThisFrame ||
+                Keyboard.current.numpadEnterKey.wasPressedThisFrame);
 #else
-        return Input.GetKeyDown(KeyCode.Space);
+        return Input.GetKeyDown(KeyCode.Space) ||
+               Input.GetKeyDown(KeyCode.Return) ||
+               Input.GetKeyDown(KeyCode.KeypadEnter);
 #endif
     }
 
@@ -750,6 +1189,14 @@ public sealed class DialogueUILayer : MonoBehaviour
 #else
         return Input.GetKeyDown(KeyCode.Escape);
 #endif
+    }
+
+    private static bool IsQuotedDialogue(string text)
+    {
+        return !string.IsNullOrWhiteSpace(text) &&
+               text.Length >= 2 &&
+               text[0] == '"' &&
+               text[text.Length - 1] == '"';
     }
 
     private static void EnsureEventSystem()
@@ -770,8 +1217,13 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private static void EnsureSceneCamera()
     {
-        if (Camera.main != null || FindFirstObjectByType<Camera>() != null)
+        Camera existingCamera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+        if (existingCamera != null)
         {
+            if (existingCamera.GetComponent<AudioListener>() == null)
+            {
+                existingCamera.gameObject.AddComponent<AudioListener>();
+            }
             return;
         }
 
@@ -784,6 +1236,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         cameraComponent.farClipPlane = 1000f;
 
         cameraObject.tag = "MainCamera";
+        cameraObject.AddComponent<AudioListener>();
         cameraObject.transform.position = new Vector3(0f, 0f, -10f);
     }
 
@@ -832,7 +1285,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         return button;
     }
 
-    private static Button CreatePauseButton(string name, Transform parent, string labelText)
+    private static Button CreatePauseButton(string name, Transform parent, string labelText, PauseMenuButtonAction.ActionType actionType)
     {
         Image image = CreateImage(name, parent, new Color(0.24f, 0.28f, 0.29f, 1f));
         Button button = image.gameObject.AddComponent<Button>();
@@ -843,6 +1296,9 @@ public sealed class DialogueUILayer : MonoBehaviour
         colors.pressedColor = new Color(0.66f, 0.58f, 0.24f, 1f);
         colors.selectedColor = new Color(0.9f, 0.82f, 0.34f, 1f);
         button.colors = colors;
+
+        PauseMenuButtonAction action = image.gameObject.AddComponent<PauseMenuButtonAction>();
+        action.SetAction(actionType);
 
         Text label = CreateText("Label", image.transform, labelText, 28, TextAnchor.MiddleCenter);
         label.color = new Color(0.95f, 0.96f, 0.96f, 1f);
@@ -885,7 +1341,8 @@ public sealed class PauseMenuButtonAction : MonoBehaviour
     public enum ActionType
     {
         Resume,
-        ReturnToMainMenu
+        ReturnToMainMenu,
+        ContinueGame
     }
 
     [SerializeField] private ActionType actionType;
@@ -935,10 +1392,13 @@ public sealed class PauseMenuButtonAction : MonoBehaviour
         switch (actionType)
         {
             case ActionType.Resume:
-                uiLayer.SendMessage("ResumeFromPauseMenu", SendMessageOptions.DontRequireReceiver);
+                uiLayer.ResumeFromPauseMenu();
                 break;
             case ActionType.ReturnToMainMenu:
-                uiLayer.SendMessage("ReturnToMainMenu", SendMessageOptions.DontRequireReceiver);
+                uiLayer.ReturnToMainMenu();
+                break;
+            case ActionType.ContinueGame:
+                uiLayer.ContinueGame();
                 break;
         }
     }

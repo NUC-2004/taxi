@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem.UI;
@@ -79,6 +80,9 @@ public sealed class MainMenuController : MonoBehaviour
         {
             case "LEVEL_0":
                 StartGame();
+                break;
+            case "ROUTE_1":
+                SceneManager.LoadScene("Level1");
                 break;
             default:
                 SetStatus("That route is reserved for a later passenger.");
@@ -238,16 +242,23 @@ public sealed class MainMenuController : MonoBehaviour
         switch (label.Trim())
         {
             case "Start Shift":
+            case "Level 0":
+            case "开始游戏":
                 return MainMenuButtonAction.ActionType.StartGame;
             case "Routes":
+            case "选择关卡":
                 return MainMenuButtonAction.ActionType.OpenRoutes;
             case "Settings":
+            case "设置":
                 return MainMenuButtonAction.ActionType.OpenSettings;
             case "End Shift":
+            case "退出游戏":
                 return MainMenuButtonAction.ActionType.QuitGame;
             case "Level 0  First Pickup":
                 return MainMenuButtonAction.ActionType.LaunchLevel0;
             case "Route 1  Reserved":
+            case "Level 1":
+            case "Level 1  Office Worker":
                 return MainMenuButtonAction.ActionType.LaunchRoute1;
             case "Route 2  Reserved":
                 return MainMenuButtonAction.ActionType.LaunchRoute2;
@@ -383,10 +394,10 @@ public sealed class MainMenuController : MonoBehaviour
         menuHeader.color = new Color(0.75f, 0.78f, 0.81f, 0.95f);
         Stretch(menuHeader.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -34f), new Vector2(-24f, 0f));
 
-        CreateMenuButton(menuPanel, "Start Shift", 0, MainMenuButtonAction.ActionType.StartGame);
-        CreateMenuButton(menuPanel, "Routes", 1, MainMenuButtonAction.ActionType.OpenRoutes);
-        CreateMenuButton(menuPanel, "Settings", 2, MainMenuButtonAction.ActionType.OpenSettings);
-        CreateMenuButton(menuPanel, "End Shift", 3, MainMenuButtonAction.ActionType.QuitGame);
+        CreateMenuButton(menuPanel, "开始游戏", 0, MainMenuButtonAction.ActionType.StartGame);
+        CreateMenuButton(menuPanel, "选择关卡", 1, MainMenuButtonAction.ActionType.OpenRoutes);
+        CreateMenuButton(menuPanel, "设置", 2, MainMenuButtonAction.ActionType.OpenSettings);
+        CreateMenuButton(menuPanel, "退出游戏", 3, MainMenuButtonAction.ActionType.QuitGame);
 
         routeHintText = CreateText("Route Hint", menuPanel, "A rain-soaked city is waiting outside.", 22, TextAnchor.LowerLeft);
         routeHintText.color = new Color(0.79f, 0.82f, 0.83f, 0.9f);
@@ -421,7 +432,7 @@ public sealed class MainMenuController : MonoBehaviour
         title.color = SoftIvory;
         Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -54f), new Vector2(-28f, -8f));
 
-        Text desc = CreateText("Level Desc", panel, "Three night routes will live here. For now, only the tutorial pickup is taking fares.", 22, TextAnchor.UpperLeft);
+        Text desc = CreateText("Level Desc", panel, "Night routes open as passengers arrive. The first office route is now taking fares.", 22, TextAnchor.UpperLeft);
         desc.horizontalOverflow = HorizontalWrapMode.Wrap;
         desc.verticalOverflow = VerticalWrapMode.Overflow;
         desc.color = new Color(0.83f, 0.85f, 0.86f, 1f);
@@ -430,7 +441,7 @@ public sealed class MainMenuController : MonoBehaviour
         Button level0Button = CreatePanelButton("Level 0  First Pickup", panel, MainMenuButtonAction.ActionType.LaunchLevel0);
         Stretch(level0Button.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -242f), new Vector2(-28f, -162f));
 
-        Button futureRouteA = CreatePanelButton("Route 1  Reserved", panel, MainMenuButtonAction.ActionType.LaunchRoute1);
+        Button futureRouteA = CreatePanelButton("Level 1  Office Worker", panel, MainMenuButtonAction.ActionType.LaunchRoute1);
         Stretch(futureRouteA.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -334f), new Vector2(-28f, -254f));
 
         Button futureRouteB = CreatePanelButton("Route 2  Reserved", panel, MainMenuButtonAction.ActionType.LaunchRoute2);

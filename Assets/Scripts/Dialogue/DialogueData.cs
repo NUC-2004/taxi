@@ -18,13 +18,26 @@ public sealed class PlayerResponseOption
     public string placeholderText;
     public int affectionDelta;
     public string nextBlockId;
+    public bool isKeywordOption;
+    public bool isUnlockedOption;
+    public string requiredOptionId;
 
-    public PlayerResponseOption(string optionId, string placeholderText, int affectionDelta, string nextBlockId = null)
+    public PlayerResponseOption(
+        string optionId,
+        string placeholderText,
+        int affectionDelta,
+        string nextBlockId = null,
+        bool isKeywordOption = false,
+        bool isUnlockedOption = false,
+        string requiredOptionId = null)
     {
         this.optionId = optionId;
         this.placeholderText = placeholderText;
         this.affectionDelta = affectionDelta;
         this.nextBlockId = nextBlockId;
+        this.isKeywordOption = isKeywordOption;
+        this.isUnlockedOption = isUnlockedOption;
+        this.requiredOptionId = requiredOptionId;
     }
 }
 
@@ -38,6 +51,7 @@ public sealed class NpcSpeakingBlock
     public string nextBlockId;
     public int noResponseAffectionDelta;
     public string noResponseNextBlockId;
+    public float responseWindowSecondsOverride;
 
     public NpcSpeakingBlock(
         string blockId,
@@ -46,7 +60,8 @@ public sealed class NpcSpeakingBlock
         List<PlayerResponseOption> responseOptions,
         string nextBlockId = null,
         int noResponseAffectionDelta = -12,
-        string noResponseNextBlockId = null)
+        string noResponseNextBlockId = null,
+        float responseWindowSecondsOverride = -1f)
     {
         this.blockId = blockId;
         this.npcTextFragments = npcTextFragments;
@@ -55,6 +70,7 @@ public sealed class NpcSpeakingBlock
         this.nextBlockId = nextBlockId;
         this.noResponseAffectionDelta = noResponseAffectionDelta;
         this.noResponseNextBlockId = noResponseNextBlockId;
+        this.responseWindowSecondsOverride = responseWindowSecondsOverride;
     }
 }
 
@@ -79,16 +95,19 @@ public static class StorySessionState
     private static readonly Dictionary<string, string> ChoicesByBlock = new Dictionary<string, string>();
     private static readonly HashSet<string> SelectedOptionIds = new HashSet<string>();
     private static readonly HashSet<string> MissedBlocks = new HashSet<string>();
+    private static string tone = string.Empty;
 
     public static IReadOnlyDictionary<string, string> Choices => ChoicesByBlock;
     public static IReadOnlyCollection<string> SelectedOptions => SelectedOptionIds;
     public static IReadOnlyCollection<string> MissedResponseBlocks => MissedBlocks;
+    public static string Tone => tone;
 
     public static void ResetForNewRun()
     {
         ChoicesByBlock.Clear();
         SelectedOptionIds.Clear();
         MissedBlocks.Clear();
+        tone = string.Empty;
     }
 
     public static void RecordChoice(string blockId, string optionId)
@@ -128,8 +147,13 @@ public static class StorySessionState
             : string.Empty;
     }
 
+    public static void SetTone(string value)
+    {
+        tone = value ?? string.Empty;
+    }
+
     public static void DebugDump()
     {
-        Debug.Log("Choices recorded: " + ChoicesByBlock.Count);
+        Debug.Log("Choices recorded: " + ChoicesByBlock.Count + " Tone: " + tone);
     }
 }

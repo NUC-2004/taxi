@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level 0 Script Explorer</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #121316;
+            --panel: #1b1d22;
+            --panel-2: #23262c;
+            --border: #3d434f;
+            --text: #ece8df;
+            --muted: #b4b0a7;
+            --accent: #d6a454;
+            --accent-2: #f0c97e;
+            --danger: #b46b6b;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: minmax(320px, 1.15fr) minmax(320px, 0.85fr);
+            min-height: 100vh;
+        }
+
+        .panel {
+            padding: 24px;
+        }
+
+        .left {
+            background: linear-gradient(180deg, #14161a 0%, #17191e 100%);
+            border-right: 1px solid var(--border);
+        }
+
+        .right {
+            background: #16181d;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            line-height: 1.5;
+            margin-bottom: 22px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--panel-2);
+            color: var(--text);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font: inherit;
+            cursor: pointer;
+            transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+        }
+
+        button.secondary {
+            background: transparent;
+        }
+
+        button.option {
+            width: 100%;
+            text-align: left;
+            padding: 14px;
+            background: #22252b;
+        }
+
+        button.option .meta {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 6px;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .block-id {
+            color: var(--accent-2);
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .npc-lines {
+            display: grid;
+            gap: 10px;
+        }
+
+        .line {
+            background: #262a31;
+            border-left: 3px solid var(--accent);
+            border-radius: 6px;
+            padding: 12px 14px;
+            line-height: 1.45;
+        }
+
+        .options,
+        .links,
+        .history {
+            display: grid;
+            gap: 10px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #272b33;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 6px 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .jump-list {
+            max-height: 240px;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            background: #191b20;
+        }
+
+        .jump-list button {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 8px;
+            background: #20232a;
+        }
+
+        .history-item {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            background: #20232a;
+            line-height: 1.4;
+        }
+
+        .history-item strong {
+            color: var(--accent-2);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .danger {
+            color: #f0b6b6;
+        }
+
+        @media (max-width: 900px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .left {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="panel left">
+            <div class="eyebrow">Interactive Script</div>
+            <h1 class="title">Level 0 Explorer</h1>
+            <p class="subtitle">
+                Click a player response to jump through the current Level 0 branch flow.
+                This is just for writing and review, so it keeps the block IDs visible.
+            </p>
+
+            <div class="toolbar">
+                <button id="restartButton">Restart</button>
+                <button id="backButton" class="secondary">Back</button>
+                <button id="copyPathButton" class="secondary">Copy Path</button>
+            </div>
+
+            <div class="card">
+                <div class="section-title">Current Block</div>
+                <div id="currentBlockId" class="block-id"></div>
+                <div id="npcLines" class="npc-lines"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">Player Responses</div>
+                <div id="options" class="options"></div>
+                <div id="noResponse" style="margin-top: 10px;"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">Next / Notes</div>
+                <div id="nextInfo" class="links"></div>
+            </div>
+        </section>
+
+        <aside class="panel right">
+            <div class="card">
+                <div class="section-title">Quick Jump</div>
+                <div id="jumpList" class="jump-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">Visited Path</div>
+                <div id="history" class="history"></div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const blocks = {
+            L0_OPEN: {
+                lines: [
+                    "You free?",
+                    "Good.",
+                    "Give me a second before I tell you where.",
+                    "When I stop, say something.",
+                    "Keys, space, mouse. Whatever's faster."
+                ],
+                next: "L0_FIRST_RESPONSE"
+            },
+            L0_FIRST_RESPONSE: {
+                lines: [
+                    "That's better.",
+                    "I hate feeling like I'm talking to the seat in front of me."
+                ],
+                options: [
+                    { id: "L0_OPEN_WARM", text: "I'm here.", affection: 2, next: "L0_OPEN_WARM_REPLY" },
+                    { id: "L0_OPEN_WRY", text: "We'll see.", affection: 1, next: "L0_OPEN_WRY_REPLY" },
+                    { id: "L0_OPEN_FLAT", text: "Destination?", affection: 0, next: "L0_OPEN_FLAT_REPLY" },
+                    { id: "L0_OPEN_GUARD", text: "You're odd.", affection: -1, next: "L0_OPEN_GUARD_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_OPEN_MISS" }
+            },
+            L0_OPEN_WARM_REPLY: { lines: ["Mm.", "You say that like it's simple."], next: "L0_DEST_SETUP" },
+            L0_OPEN_WRY_REPLY: { lines: ["Fair enough.", "I've probably earned that."], next: "L0_DEST_SETUP" },
+            L0_OPEN_FLAT_REPLY: { lines: ["Right.", "Keep it practical."], next: "L0_DEST_SETUP" },
+            L0_OPEN_GUARD_REPLY: { lines: ["A little, yeah.", "Long night."], next: "L0_DEST_SETUP" },
+            L0_OPEN_MISS: { lines: ["Okay.", "Quiet works too."], next: "L0_DEST_SETUP" },
+
+            L0_DEST_SETUP: {
+                lines: [
+                    "I said Crescent Hotel.",
+                    "Then I kept walking.",
+                    "Now I'm doing the same thing in your cab."
+                ],
+                next: "L0_DEST_RESPONSE"
+            },
+            L0_DEST_RESPONSE: {
+                lines: ["Well?"],
+                options: [
+                    { id: "L0_DEST_ASK", text: "Then where?", affection: 1, next: "L0_DEST_ASK_REPLY" },
+                    { id: "L0_DEST_SOFT", text: "Take your time.", affection: 2, next: "L0_DEST_SOFT_REPLY" },
+                    { id: "L0_DEST_SHARP", text: "You're stalling.", affection: -1, next: "L0_DEST_SHARP_REPLY" },
+                    { id: "L0_DEST_CURIOUS", text: "Who was there?", affection: 1, next: "L0_DEST_CURIOUS_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_DEST_MISS" }
+            },
+            L0_DEST_ASK_REPLY: { lines: ["If I knew, I'd have said it already.", "That's the whole problem."], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_SOFT_REPLY: { lines: ["That's nice of you.", "Also kind of dangerous."], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_SHARP_REPLY: { lines: ["Maybe I am.", "Still not the worst idea I've had tonight."], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_CURIOUS_REPLY: { lines: ["Too many people.", "Too much polished glass."], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_MISS: { lines: ["You leave people room.", "I can't tell if that's kind or lazy."], next: "L0_NIGHT_CONTEXT" },
+
+            L0_NIGHT_CONTEXT: {
+                lines: [
+                    "It was one of those rooms where everybody looks expensive and nobody says what they mean.",
+                    "Soft voices. Bright glass. Too much perfume.",
+                    "You know the kind."
+                ],
+                next: "L0_NIGHT_RESPONSE"
+            },
+            L0_NIGHT_RESPONSE: {
+                lines: ["What would you have said?"],
+                options: [
+                    { id: "L0_NIGHT_LEAVE", text: "Leave early.", affection: 1, next: "L0_NIGHT_LEAVE_REPLY" },
+                    { id: "L0_NIGHT_ENDURE", text: "Smile, then go.", affection: 0, next: "L0_NIGHT_ENDURE_REPLY" },
+                    { id: "L0_NIGHT_REFUSE", text: "Say no.", affection: 2, next: "L0_NIGHT_REFUSE_REPLY" },
+                    { id: "L0_NIGHT_DEFLECT", text: "Depends on them.", affection: 1, next: "L0_NIGHT_DEFLECT_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_NIGHT_MISS" }
+            },
+            L0_NIGHT_LEAVE_REPLY: { lines: ["Yeah.", "I almost did. A few times."], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_ENDURE_REPLY: { lines: ["That sounds like experience.", "Not in a flattering way."], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_REFUSE_REPLY: { lines: ["Mm.", "Easy word. Bad timing."], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_DEFLECT_REPLY: { lines: ["That's the annoying part.", "They weren't being dramatic about it."], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_MISS: { lines: ["No answer.", "Maybe that's an answer too."], next: "L0_ROUTE_SETUP" },
+
+            L0_ROUTE_SETUP: {
+                lines: [
+                    "Take the river road.",
+                    "Not the tunnel.",
+                    "I don't want to feel boxed in yet."
+                ],
+                next: "L0_ROUTE_RESPONSE"
+            },
+            L0_ROUTE_RESPONSE: {
+                lines: ["Would you?"],
+                options: [
+                    { id: "L0_ROUTE_BRIGHT", text: "Too bright.", affection: 0, next: "L0_ROUTE_BRIGHT_REPLY" },
+                    { id: "L0_ROUTE_RIVER", text: "River road.", affection: 2, next: "L0_ROUTE_RIVER_REPLY" },
+                    { id: "L0_ROUTE_TUNNEL", text: "Take the tunnel.", affection: -1, next: "L0_ROUTE_TUNNEL_REPLY" },
+                    { id: "L0_ROUTE_ASKWHY", text: "Why not?", affection: 1, next: "L0_ROUTE_ASKWHY_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_ROUTE_MISS" }
+            },
+            L0_ROUTE_BRIGHT_REPLY: { lines: ["Exactly.", "Some roads feel like they're watching you."], next: "L0_NAME_SETUP" },
+            L0_ROUTE_RIVER_REPLY: { lines: ["Right.", "A few extra minutes can feel very generous."], next: "L0_NAME_SETUP" },
+            L0_ROUTE_TUNNEL_REPLY: { lines: ["You sound like my mother.", "Which isn't a compliment, sorry."], next: "L0_NAME_SETUP" },
+            L0_ROUTE_ASKWHY_REPLY: { lines: ["Because once you're in, that's it.", "No windows. No turns. Just forward."], next: "L0_NAME_SETUP" },
+            L0_ROUTE_MISS: { lines: ["You let me choose.", "Most people like to feel useful sooner than that."], next: "L0_NAME_SETUP" },
+
+            L0_NAME_SETUP: {
+                lines: [
+                    "His name is Daichi.",
+                    "That probably tells you enough.",
+                    "Or maybe it tells you nothing."
+                ],
+                next: "L0_NAME_RESPONSE"
+            },
+            L0_NAME_RESPONSE: {
+                lines: ["Choose one."],
+                options: [
+                    { id: "L0_NAME_MARRY", text: "Marry him.", affection: -1, next: "L0_NAME_MARRY_REPLY" },
+                    { id: "L0_NAME_APOLOGIZE", text: "Apologize.", affection: 0, next: "L0_NAME_APOLOGIZE_REPLY" },
+                    { id: "L0_NAME_THANK", text: "Thank him.", affection: 0, next: "L0_NAME_THANK_REPLY" },
+                    { id: "L0_NAME_NONE", text: "None fit.", affection: 2, next: "L0_NAME_NONE_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_NAME_MISS" }
+            },
+            L0_NAME_MARRY_REPLY: { lines: ["That's one way to put it.", "A very tidy way."], next: "L0_DECISION_SETUP" },
+            L0_NAME_APOLOGIZE_REPLY: { lines: ["There was a lot of that going around.", "Nobody sounded sorry, though."], next: "L0_DECISION_SETUP" },
+            L0_NAME_THANK_REPLY: { lines: ["He's used to that.", "Makes rooms like that run smoothly."], next: "L0_DECISION_SETUP" },
+            L0_NAME_NONE_REPLY: { lines: ["Yeah.", "Better."], next: "L0_DECISION_SETUP" },
+            L0_NAME_MISS: { lines: ["You passed.", "Probably smart."], next: "L0_DECISION_SETUP" },
+
+            L0_DECISION_SETUP: {
+                lines: [
+                    "It's stupid, but all night I've been waiting for somebody to say one thing that sounds real.",
+                    "Not smart.",
+                    "Just real."
+                ],
+                next: "L0_DECISION_RESPONSE"
+            },
+            L0_DECISION_RESPONSE: {
+                lines: ["So. Give me one."],
+                options: [
+                    { id: "L0_DECISION_GO", text: "Choose yourself.", affection: 2, next: "L0_DECISION_GO_REPLY" },
+                    { id: "L0_DECISION_BACK", text: "Go back.", affection: 0, next: "L0_DECISION_BACK_REPLY" },
+                    { id: "L0_DECISION_TELL", text: "Tell him plainly.", affection: 1, next: "L0_DECISION_TELL_REPLY" },
+                    { id: "L0_DECISION_DRIVER", text: "Not my call.", affection: -1, next: "L0_DECISION_DRIVER_REPLY" }
+                ],
+                miss: { affection: -2, next: "L0_DECISION_MISS" }
+            },
+            L0_DECISION_GO_REPLY: { lines: ["That's annoyingly clear.", "I almost believe you."], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_BACK_REPLY: { lines: ["That would be easier.", "Which doesn't make it wrong."], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_TELL_REPLY: { lines: ["Plainly.", "You've said that kind of thing before, haven't you?"], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_DRIVER_REPLY: { lines: ["No.", "But people do say strange honest things to drivers."], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_MISS: { lines: ["Right.", "Leave it hanging."], next: "L0_FINAL_APPROACH" },
+
+            L0_FINAL_APPROACH: {
+                lines: [
+                    "All right.",
+                    "Not Crescent Hotel.",
+                    "Shin-Ori Station.",
+                    "If I miss the last express, maybe that's that.",
+                    "If I make it..."
+                ],
+                next: "L0_FINAL_RESPONSE"
+            },
+            L0_FINAL_RESPONSE: {
+                lines: ["Finish it."],
+                options: [
+                    { id: "L0_FINAL_BEGIN", text: "Then begin.", affection: 3, next: "L0_END_BEGIN" },
+                    { id: "L0_FINAL_BREATHE", text: "Then choose.", affection: 2, next: "L0_END_BREATHE" },
+                    { id: "L0_FINAL_CALL", text: "Then call him.", affection: 1, next: "L0_END_CALL" },
+                    { id: "L0_FINAL_COLD", text: "Don't drift.", affection: -1, next: "L0_END_COLD" }
+                ],
+                miss: { affection: -2, next: "L0_END_MISS" }
+            },
+            L0_END_BEGIN: { lines: ["Begin.", "You make it sound almost normal.", "Say it again in five minutes."], next: "L0_END_COMMON" },
+            L0_END_BREATHE: { lines: ["Maybe that's enough for one night.", "Not brave.", "Just enough."], next: "L0_END_COMMON" },
+            L0_END_CALL: { lines: ["You really like things neat.", "I don't hate that.", "Still... maybe."], next: "L0_END_COMMON" },
+            L0_END_COLD: { lines: ["No.", "You're right, though.", "A station's just a station.", "The hard part starts after."], next: "L0_END_COMMON" },
+            L0_END_MISS: { lines: ["One last chance.", "All right."], next: "L0_END_COMMON" },
+
+            L0_END_COMMON: {
+                lines: [
+                    "There.",
+                    "That's the station sign.",
+                    "Funny. I started this ride trying to sound in control.",
+                    "Maybe I just wanted somebody to answer back.",
+                    "Thanks. Or... whatever this was.",
+                    "Just don't forget me before the light changes."
+                ],
+                next: "END"
+            }
+        };
+
+        const state = {
+            current: "L0_OPEN",
+            history: []
+        };
+
+        const currentBlockId = document.getElementById("currentBlockId");
+        const npcLines = document.getElementById("npcLines");
+        const options = document.getElementById("options");
+        const noResponse = document.getElementById("noResponse");
+        const nextInfo = document.getElementById("nextInfo");
+        const history = document.getElementById("history");
+        const jumpList = document.getElementById("jumpList");
+
+        function render() {
+            const block = blocks[state.current];
+            currentBlockId.textContent = state.current;
+
+            npcLines.innerHTML = "";
+            (block.lines || []).forEach((line, index) => {
+                const div = document.createElement("div");
+                div.className = "line";
+                div.textContent = `${index + 1}. ${line}`;
+                npcLines.appendChild(div);
+            });
+
+            options.innerHTML = "";
+            if (block.options && block.options.length > 0) {
+                block.options.forEach((option) => {
+                    const button = document.createElement("button");
+                    button.className = "option";
+                    button.innerHTML = `
+                        <span>${option.text}</span>
+                        <span class="meta">${option.id} · Affection ${formatAffection(option.affection)} · Next ${option.next}</span>
+                    `;
+                    button.addEventListener("click", () => moveTo(option.next, `${state.current} -> ${option.id}`));
+                    options.appendChild(button);
+                });
+            } else {
+                const empty = document.createElement("div");
+                empty.className = "muted";
+                empty.textContent = "No player responses in this block.";
+                options.appendChild(empty);
+            }
+
+            noResponse.innerHTML = "";
+            if (block.miss) {
+                const missButton = document.createElement("button");
+                missButton.className = "option secondary";
+                missButton.innerHTML = `
+                    <span class="danger">No Response</span>
+                    <span class="meta">Affection ${formatAffection(block.miss.affection)} · Next ${block.miss.next}</span>
+                `;
+                missButton.addEventListener("click", () => moveTo(block.miss.next, `${state.current} -> NO_RESPONSE`));
+                noResponse.appendChild(missButton);
+            }
+
+            nextInfo.innerHTML = "";
+            if (block.next) {
+                const nextTag = document.createElement("div");
+                nextTag.className = "tag";
+                nextTag.textContent = `Auto next: ${block.next}`;
+                nextInfo.appendChild(nextTag);
+
+                const nextButton = document.createElement("button");
+                nextButton.textContent = block.next === "END" ? "Jump To END" : `Go To ${block.next}`;
+                nextButton.addEventListener("click", () => moveTo(block.next, `${state.current} -> AUTO`));
+                nextInfo.appendChild(nextButton);
+            } else {
+                const noNext = document.createElement("div");
+                noNext.className = "muted";
+                noNext.textContent = "No automatic next block.";
+                nextInfo.appendChild(noNext);
+            }
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            history.innerHTML = "";
+
+            if (state.history.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "muted";
+                empty.textContent = "No path yet. Start clicking through the script.";
+                history.appendChild(empty);
+                return;
+            }
+
+            state.history.forEach((entry, index) => {
+                const item = document.createElement("div");
+                item.className = "history-item";
+                item.innerHTML = `<strong>${index + 1}.</strong> ${entry}`;
+                history.appendChild(item);
+            });
+        }
+
+        function buildJumpList() {
+            const ids = Object.keys(blocks).sort();
+            jumpList.innerHTML = "";
+
+            ids.forEach((id) => {
+                const button = document.createElement("button");
+                button.textContent = id;
+                button.addEventListener("click", () => moveTo(id, `Jump -> ${id}`, false));
+                jumpList.appendChild(button);
+            });
+        }
+
+        function moveTo(nextBlockId, historyEntry, append = true) {
+            if (nextBlockId === "END") {
+                if (append) {
+                    state.history.push(historyEntry);
+                }
+                state.current = "L0_END_COMMON";
+                render();
+                return;
+            }
+
+            if (!blocks[nextBlockId]) {
+                alert(`Block not found: ${nextBlockId}`);
+                return;
+            }
+
+            if (append) {
+                state.history.push(historyEntry);
+            }
+
+            state.current = nextBlockId;
+            render();
+        }
+
+        function formatAffection(value) {
+            return value > 0 ? `+${value}` : `${value}`;
+        }
+
+        document.getElementById("restartButton").addEventListener("click", () => {
+            state.current = "L0_OPEN";
+            state.history = [];
+            render();
+        });
+
+        document.getElementById("backButton").addEventListener("click", () => {
+            if (state.history.length === 0) {
+                state.current = "L0_OPEN";
+                render();
+                return;
+            }
+
+            state.history.pop();
+            state.current = "L0_OPEN";
+
+            const replay = [...state.history];
+            state.history = [];
+
+            for (const entry of replay) {
+                const next = entry.split(" -> ").pop();
+                if (next === "AUTO" || next === "NO_RESPONSE") {
+                    const source = entry.split(" -> ")[0];
+                    const block = blocks[source];
+                    moveTo(next === "AUTO" ? block.next : block.miss.next, entry);
+                } else {
+                    const option = Object.values(blocks)
+                        .flatMap((block) => block.options || [])
+                        .find((item) => item.id === next);
+                    if (option) {
+                        moveTo(option.next, entry);
+                    }
+                }
+            }
+
+            render();
+        });
+
+        document.getElementById("copyPathButton").addEventListener("click", async () => {
+            const content = state.history.join("\n") || "L0_OPEN";
+            try {
+                await navigator.clipboard.writeText(content);
+            } catch {
+                alert("Couldn't copy path automatically.");
+            }
+        });
+
+        buildJumpList();
+        render();
+    </script>
+</body>
+</html>

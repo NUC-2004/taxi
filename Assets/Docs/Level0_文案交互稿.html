@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Level0 文案交互稿</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #121316;
+            --panel: #1b1d22;
+            --panel-2: #23262c;
+            --border: #3d434f;
+            --text: #ece8df;
+            --muted: #b4b0a7;
+            --accent: #d6a454;
+            --accent-2: #f0c97e;
+            --danger: #d49797;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: minmax(360px, 1.15fr) minmax(320px, 0.85fr);
+            min-height: 100vh;
+        }
+
+        .panel {
+            padding: 24px;
+        }
+
+        .left {
+            background: linear-gradient(180deg, #14161a 0%, #17191e 100%);
+            border-right: 1px solid var(--border);
+        }
+
+        .right {
+            background: #16181d;
+        }
+
+        h1, h2, h3, p {
+            margin: 0;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 22px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--panel-2);
+            color: var(--text);
+            border-radius: 6px;
+            padding: 10px 14px;
+            font: inherit;
+            cursor: pointer;
+            transition: background 120ms ease, border-color 120ms ease;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+        }
+
+        button.secondary {
+            background: transparent;
+        }
+
+        button.option {
+            width: 100%;
+            text-align: left;
+            padding: 14px;
+            background: #22252b;
+        }
+
+        button.option .meta {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            background: var(--panel);
+            border-radius: 8px;
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .block-id {
+            color: var(--accent-2);
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .npc-lines,
+        .options,
+        .links,
+        .history {
+            display: grid;
+            gap: 10px;
+        }
+
+        .line {
+            background: #262a31;
+            border-left: 3px solid var(--accent);
+            border-radius: 6px;
+            padding: 12px 14px;
+            line-height: 1.55;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #272b33;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 6px 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .jump-list {
+            max-height: 260px;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            background: #191b20;
+        }
+
+        .jump-list button {
+            width: 100%;
+            text-align: left;
+            margin-bottom: 8px;
+            background: #20232a;
+        }
+
+        .history-item {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 12px;
+            background: #20232a;
+            line-height: 1.5;
+        }
+
+        .history-item strong {
+            color: var(--accent-2);
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .danger {
+            color: #f0b6b6;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 900px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .left {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="panel left">
+            <div class="eyebrow">Script Tool</div>
+            <h1 class="title">Level0 文案交互稿</h1>
+            <p class="subtitle">
+                用来点分支、顺台词、改节奏的本地网页。<br>
+                左边看当前文本，右边可以快速跳任意 block，也能回看你刚刚点过的路径。
+            </p>
+
+            <div class="toolbar">
+                <button id="restartButton">重新开始</button>
+                <button id="backButton" class="secondary">后退一步</button>
+                <button id="copyPathButton" class="secondary">复制当前路径</button>
+            </div>
+
+            <div class="card">
+                <div class="section-title">当前 Block</div>
+                <div id="currentBlockId" class="block-id"></div>
+                <div id="npcLines" class="npc-lines"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">玩家回应</div>
+                <div id="options" class="options"></div>
+                <div id="noResponse" style="margin-top: 10px;"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">流程信息</div>
+                <div id="nextInfo" class="links"></div>
+            </div>
+        </section>
+
+        <aside class="panel right">
+            <div class="card">
+                <div class="section-title">快速跳转</div>
+                <div class="hint" style="margin-bottom: 12px;">
+                    想直接改某一段时，可以从这里跳过去，不用每次都从头点。
+                </div>
+                <div id="jumpList" class="jump-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">已点路径</div>
+                <div id="history" class="history"></div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const blocks = {
+            L0_OPEN: {
+                lines: [
+                    "你现在接单吗？",
+                    "那就好。",
+                    "先别急，让我想一下去哪。",
+                    "我停下来的时候，你说句话。",
+                    "上下、空格、鼠标，哪个顺手用哪个。"
+                ],
+                next: "L0_FIRST_RESPONSE"
+            },
+            L0_FIRST_RESPONSE: {
+                lines: [
+                    "这样好多了。",
+                    "我不喜欢那种像在对着前座说话的感觉。"
+                ],
+                options: [
+                    { id: "L0_OPEN_WARM", text: "我在听。", affection: 2, next: "L0_OPEN_WARM_REPLY" },
+                    { id: "L0_OPEN_WRY", text: "那得看。", affection: 1, next: "L0_OPEN_WRY_REPLY" },
+                    { id: "L0_OPEN_FLAT", text: "去哪？", affection: 0, next: "L0_OPEN_FLAT_REPLY" },
+                    { id: "L0_OPEN_GUARD", text: "你挺怪。", affection: -1, next: "L0_OPEN_GUARD_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_OPEN_MISS" }
+            },
+            L0_OPEN_WARM_REPLY: { lines: ["嗯。", "你说得倒挺轻松。"], next: "L0_DEST_SETUP" },
+            L0_OPEN_WRY_REPLY: { lines: ["也对。", "我大概也活该被这么回。"], next: "L0_DEST_SETUP" },
+            L0_OPEN_FLAT_REPLY: { lines: ["行。", "那就先按正事来。"], next: "L0_DEST_SETUP" },
+            L0_OPEN_GUARD_REPLY: { lines: ["是有点。", "今晚太长了。"], next: "L0_DEST_SETUP" },
+            L0_OPEN_MISS: { lines: ["好吧。", "安静也行。"], next: "L0_DEST_SETUP" },
+
+            L0_DEST_SETUP: {
+                lines: [
+                    "我刚才明明说的是 Crescent Hotel。",
+                    "结果我直接从门口走过去了。",
+                    "现在坐上你的车，我还在干一样的事。"
+                ],
+                next: "L0_DEST_RESPONSE"
+            },
+            L0_DEST_RESPONSE: {
+                lines: ["怎么说？"],
+                options: [
+                    { id: "L0_DEST_ASK", text: "那去哪？", affection: 1, next: "L0_DEST_ASK_REPLY" },
+                    { id: "L0_DEST_SOFT", text: "慢慢想。", affection: 2, next: "L0_DEST_SOFT_REPLY" },
+                    { id: "L0_DEST_SHARP", text: "你在拖。", affection: -1, next: "L0_DEST_SHARP_REPLY" },
+                    { id: "L0_DEST_CURIOUS", text: "那边有谁？", affection: 1, next: "L0_DEST_CURIOUS_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_DEST_MISS" }
+            },
+            L0_DEST_ASK_REPLY: { lines: ["我要是知道，刚才就说了。", "问题就在这。"], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_SOFT_REPLY: { lines: ["你这人还挺好。", "但这话也挺危险。"], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_SHARP_REPLY: { lines: ["也许吧。", "不过这还不是我今晚最糟的主意。"], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_CURIOUS_REPLY: { lines: ["人太多了。", "玻璃擦得太亮。"], next: "L0_NIGHT_CONTEXT" },
+            L0_DEST_MISS: { lines: ["你还挺会留空。", "我一时分不清你是体贴还是偷懒。"], next: "L0_NIGHT_CONTEXT" },
+
+            L0_NIGHT_CONTEXT: {
+                lines: [
+                    "就是那种地方，人人看起来都很贵，嘴里却没一句真话。",
+                    "声音都放得很轻，玻璃很亮，香水又太浓。",
+                    "你懂那种场合吧。"
+                ],
+                next: "L0_NIGHT_RESPONSE"
+            },
+            L0_NIGHT_RESPONSE: {
+                lines: ["换你，你会怎么说？"],
+                options: [
+                    { id: "L0_NIGHT_LEAVE", text: "早点走。", affection: 1, next: "L0_NIGHT_LEAVE_REPLY" },
+                    { id: "L0_NIGHT_ENDURE", text: "先顺着。", affection: 0, next: "L0_NIGHT_ENDURE_REPLY" },
+                    { id: "L0_NIGHT_REFUSE", text: "直接拒绝。", affection: 2, next: "L0_NIGHT_REFUSE_REPLY" },
+                    { id: "L0_NIGHT_DEFLECT", text: "看人。", affection: 1, next: "L0_NIGHT_DEFLECT_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_NIGHT_MISS" }
+            },
+            L0_NIGHT_LEAVE_REPLY: { lines: ["对。", "其实我差一点就那么做了，好几次。"], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_ENDURE_REPLY: { lines: ["听起来你挺有经验。", "而且不是那种好经验。"], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_REFUSE_REPLY: { lines: ["嗯。", "词倒是简单，就是时机总不简单。"], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_DEFLECT_REPLY: { lines: ["烦就烦在这。", "他们还不是那种会把场面闹大的人。"], next: "L0_ROUTE_SETUP" },
+            L0_NIGHT_MISS: { lines: ["不说啊。", "那也算一种回答。"], next: "L0_ROUTE_SETUP" },
+
+            L0_ROUTE_SETUP: {
+                lines: [
+                    "走沿河那条路吧。",
+                    "别进隧道。",
+                    "我现在还不想觉得自己被关住了。"
+                ],
+                next: "L0_ROUTE_RESPONSE"
+            },
+            L0_ROUTE_RESPONSE: {
+                lines: ["你会这么走吗？"],
+                options: [
+                    { id: "L0_ROUTE_BRIGHT", text: "太亮了。", affection: 0, next: "L0_ROUTE_BRIGHT_REPLY" },
+                    { id: "L0_ROUTE_RIVER", text: "走河边。", affection: 2, next: "L0_ROUTE_RIVER_REPLY" },
+                    { id: "L0_ROUTE_TUNNEL", text: "进隧道。", affection: -1, next: "L0_ROUTE_TUNNEL_REPLY" },
+                    { id: "L0_ROUTE_ASKWHY", text: "为什么？", affection: 1, next: "L0_ROUTE_ASKWHY_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_ROUTE_MISS" }
+            },
+            L0_ROUTE_BRIGHT_REPLY: { lines: ["对吧。", "有些路亮得像在盯着你看。"], next: "L0_NAME_SETUP" },
+            L0_ROUTE_RIVER_REPLY: { lines: ["我也是这么想的。", "多出来的几分钟，有时候会显得特别慷慨。"], next: "L0_NAME_SETUP" },
+            L0_ROUTE_TUNNEL_REPLY: { lines: ["你说话有点像我妈。", "抱歉，这不算夸你。"], next: "L0_NAME_SETUP" },
+            L0_ROUTE_ASKWHY_REPLY: { lines: ["因为一进去就那样了。", "没窗，没拐弯，只能往前。"], next: "L0_NAME_SETUP" },
+            L0_ROUTE_MISS: { lines: ["你倒是把选择留给我了。", "很多人会更早一点想证明自己有用。"], next: "L0_NAME_SETUP" },
+
+            L0_NAME_SETUP: {
+                lines: [
+                    "他叫 Daichi。",
+                    "这个名字大概已经说明点什么了。",
+                    "也可能什么都说明不了。"
+                ],
+                next: "L0_NAME_RESPONSE"
+            },
+            L0_NAME_RESPONSE: {
+                lines: ["你猜一个。"],
+                options: [
+                    { id: "L0_NAME_MARRY", text: "跟他走。", affection: -1, next: "L0_NAME_MARRY_REPLY" },
+                    { id: "L0_NAME_APOLOGIZE", text: "跟他道歉。", affection: 0, next: "L0_NAME_APOLOGIZE_REPLY" },
+                    { id: "L0_NAME_THANK", text: "谢谢他。", affection: 0, next: "L0_NAME_THANK_REPLY" },
+                    { id: "L0_NAME_NONE", text: "都不像。", affection: 2, next: "L0_NAME_NONE_REPLY" }
+                ],
+                miss: { affection: -1, next: "L0_NAME_MISS" }
+            },
+            L0_NAME_MARRY_REPLY: { lines: ["也不是不能这么说。", "就是太整齐了。"], next: "L0_DECISION_SETUP" },
+            L0_NAME_APOLOGIZE_REPLY: { lines: ["今晚到处都是这个气氛。", "但没几个人听起来真的抱歉。"], next: "L0_DECISION_SETUP" },
+            L0_NAME_THANK_REPLY: { lines: ["他挺习惯听这个的。", "那种地方就是靠这种话运转。"], next: "L0_DECISION_SETUP" },
+            L0_NAME_NONE_REPLY: { lines: ["嗯。", "这样顺耳多了。"], next: "L0_DECISION_SETUP" },
+            L0_NAME_MISS: { lines: ["你不接。", "也挺聪明。"], next: "L0_DECISION_SETUP" },
+
+            L0_DECISION_SETUP: {
+                lines: [
+                    "挺蠢的，但我今晚一直在等一句像真的话。",
+                    "不用高明。",
+                    "真的就行。"
+                ],
+                next: "L0_DECISION_RESPONSE"
+            },
+            L0_DECISION_RESPONSE: {
+                lines: ["那你给我一句。"],
+                options: [
+                    { id: "L0_DECISION_GO", text: "照你自己来。", affection: 2, next: "L0_DECISION_GO_REPLY" },
+                    { id: "L0_DECISION_BACK", text: "那就回去。", affection: 0, next: "L0_DECISION_BACK_REPLY" },
+                    { id: "L0_DECISION_TELL", text: "讲清楚。", affection: 1, next: "L0_DECISION_TELL_REPLY" },
+                    { id: "L0_DECISION_DRIVER", text: "这不归我。", affection: -1, next: "L0_DECISION_DRIVER_REPLY" }
+                ],
+                miss: { affection: -2, next: "L0_DECISION_MISS" }
+            },
+            L0_DECISION_GO_REPLY: { lines: ["这话清楚得让人烦。", "但我差点就信了。"], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_BACK_REPLY: { lines: ["那样会轻松一点。", "不过轻松也不代表错。"], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_TELL_REPLY: { lines: ["讲清楚。", "你以前是不是也这么劝过别人？"], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_DRIVER_REPLY: { lines: ["也是。", "但人有时候确实会对司机说点怪诚实的话。"], next: "L0_FINAL_APPROACH" },
+            L0_DECISION_MISS: { lines: ["行。", "那就继续悬着。"], next: "L0_FINAL_APPROACH" },
+
+            L0_FINAL_APPROACH: {
+                lines: [
+                    "好吧。",
+                    "不去 Crescent Hotel 了。",
+                    "去 Shin-Ori 车站。",
+                    "要是末班快车都赶不上，那大概就算了。",
+                    "如果我赶上了……"
+                ],
+                next: "L0_FINAL_RESPONSE"
+            },
+            L0_FINAL_RESPONSE: {
+                lines: ["你替我把后半句说完。"],
+                options: [
+                    { id: "L0_FINAL_BEGIN", text: "那就开始。", affection: 3, next: "L0_END_BEGIN" },
+                    { id: "L0_FINAL_BREATHE", text: "那就选吧。", affection: 2, next: "L0_END_BREATHE" },
+                    { id: "L0_FINAL_CALL", text: "那就打吧。", affection: 1, next: "L0_END_CALL" },
+                    { id: "L0_FINAL_COLD", text: "别再飘了。", affection: -1, next: "L0_END_COLD" }
+                ],
+                miss: { affection: -2, next: "L0_END_MISS" }
+            },
+            L0_END_BEGIN: { lines: ["开始。", "你说得好像这事也没那么离谱。", "五分钟后你再说一遍。"], next: "L0_END_COMMON" },
+            L0_END_BREATHE: { lines: ["也许这样对今晚来说就够了。", "不算勇敢。", "但够了。"], next: "L0_END_COMMON" },
+            L0_END_CALL: { lines: ["你是真的很喜欢把事情收干净。", "倒也不讨厌。", "不过……也许吧。"], next: "L0_END_COMMON" },
+            L0_END_COLD: { lines: ["也是。", "你这句没错。", "车站就是车站。", "难的是到了以后。"], next: "L0_END_COMMON" },
+            L0_END_MISS: { lines: ["最后一次你也不接。", "行吧。"], next: "L0_END_COMMON" },
+
+            L0_END_COMMON: {
+                lines: [
+                    "到了。",
+                    "前面那个就是车站的牌子。",
+                    "挺好笑的，我上车的时候还在装得像自己很有数。",
+                    "可能我只是想让人回我一句。",
+                    "谢了。或者……也别把这句话当真。",
+                    "至少别在红灯变绿之前就把我忘了。"
+                ],
+                next: "END"
+            }
+        };
+
+        const uiText = {
+            affection: "好感",
+            next: "下一段",
+            autoNext: "自动跳转",
+            noResponse: "不回应",
+            noOptions: "这一段没有玩家选项。",
+            noAutoNext: "这一段没有自动跳转。",
+            historyEmpty: "还没有点过路径。先从左边开始点吧。",
+            copyFailed: "自动复制失败了。",
+            blockMissing: "找不到 block："
+        };
+
+        const state = {
+            current: "L0_OPEN",
+            history: [],
+            snapshots: ["L0_OPEN"]
+        };
+
+        const currentBlockId = document.getElementById("currentBlockId");
+        const npcLines = document.getElementById("npcLines");
+        const options = document.getElementById("options");
+        const noResponse = document.getElementById("noResponse");
+        const nextInfo = document.getElementById("nextInfo");
+        const history = document.getElementById("history");
+        const jumpList = document.getElementById("jumpList");
+
+        function render() {
+            const block = blocks[state.current];
+            currentBlockId.textContent = state.current;
+
+            npcLines.innerHTML = "";
+            (block.lines || []).forEach((line, index) => {
+                const div = document.createElement("div");
+                div.className = "line";
+                div.textContent = `${index + 1}. ${line}`;
+                npcLines.appendChild(div);
+            });
+
+            options.innerHTML = "";
+            if (block.options && block.options.length > 0) {
+                block.options.forEach((option) => {
+                    const button = document.createElement("button");
+                    button.className = "option";
+                    button.innerHTML = `
+                        <span>${option.text}</span>
+                        <span class="meta">${option.id} · ${uiText.affection}${formatAffection(option.affection)} · ${uiText.next} ${option.next}</span>
+                    `;
+                    button.addEventListener("click", () => moveTo(option.next, `${state.current} -> ${option.id}`));
+                    options.appendChild(button);
+                });
+            } else {
+                const empty = document.createElement("div");
+                empty.className = "muted";
+                empty.textContent = uiText.noOptions;
+                options.appendChild(empty);
+            }
+
+            noResponse.innerHTML = "";
+            if (block.miss) {
+                const missButton = document.createElement("button");
+                missButton.className = "option secondary";
+                missButton.innerHTML = `
+                    <span class="danger">${uiText.noResponse}</span>
+                    <span class="meta">${uiText.affection}${formatAffection(block.miss.affection)} · ${uiText.next} ${block.miss.next}</span>
+                `;
+                missButton.addEventListener("click", () => moveTo(block.miss.next, `${state.current} -> NO_RESPONSE`));
+                noResponse.appendChild(missButton);
+            }
+
+            nextInfo.innerHTML = "";
+            if (block.next) {
+                const nextTag = document.createElement("div");
+                nextTag.className = "tag";
+                nextTag.textContent = `${uiText.autoNext}: ${block.next}`;
+                nextInfo.appendChild(nextTag);
+
+                const nextButton = document.createElement("button");
+                nextButton.textContent = block.next === "END" ? "跳到结尾" : `前往 ${block.next}`;
+                nextButton.addEventListener("click", () => moveTo(block.next, `${state.current} -> AUTO`));
+                nextInfo.appendChild(nextButton);
+            } else {
+                const noNext = document.createElement("div");
+                noNext.className = "muted";
+                noNext.textContent = uiText.noAutoNext;
+                nextInfo.appendChild(noNext);
+            }
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            history.innerHTML = "";
+
+            if (state.history.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "muted";
+                empty.textContent = uiText.historyEmpty;
+                history.appendChild(empty);
+                return;
+            }
+
+            state.history.forEach((entry, index) => {
+                const item = document.createElement("div");
+                item.className = "history-item";
+                item.innerHTML = `<strong>${index + 1}.</strong> ${entry}`;
+                history.appendChild(item);
+            });
+        }
+
+        function buildJumpList() {
+            const ids = Object.keys(blocks).sort();
+            jumpList.innerHTML = "";
+
+            ids.forEach((id) => {
+                const button = document.createElement("button");
+                button.textContent = id;
+                button.addEventListener("click", () => moveTo(id, `跳转 -> ${id}`, false));
+                jumpList.appendChild(button);
+            });
+        }
+
+        function moveTo(nextBlockId, historyEntry, record = true) {
+            if (nextBlockId === "END") {
+                if (record) {
+                    state.history.push(historyEntry);
+                    state.snapshots.push(state.current);
+                }
+                state.current = "L0_END_COMMON";
+                render();
+                return;
+            }
+
+            if (!blocks[nextBlockId]) {
+                alert(uiText.blockMissing + nextBlockId);
+                return;
+            }
+
+            if (record) {
+                state.history.push(historyEntry);
+                state.snapshots.push(state.current);
+            }
+
+            state.current = nextBlockId;
+            render();
+        }
+
+        function formatAffection(value) {
+            return value > 0 ? `+${value}` : `${value}`;
+        }
+
+        document.getElementById("restartButton").addEventListener("click", () => {
+            state.current = "L0_OPEN";
+            state.history = [];
+            state.snapshots = ["L0_OPEN"];
+            render();
+        });
+
+        document.getElementById("backButton").addEventListener("click", () => {
+            if (state.snapshots.length <= 1) {
+                state.current = "L0_OPEN";
+                state.history = [];
+                state.snapshots = ["L0_OPEN"];
+                render();
+                return;
+            }
+
+            state.history.pop();
+            state.snapshots.pop();
+            state.current = state.snapshots[state.snapshots.length - 1];
+            render();
+        });
+
+        document.getElementById("copyPathButton").addEventListener("click", async () => {
+            const content = state.history.join("\n") || "L0_OPEN";
+            try {
+                await navigator.clipboard.writeText(content);
+            } catch {
+                alert(uiText.copyFailed);
+            }
+        });
+
+        buildJumpList();
+        render();
+    </script>
+</body>
+</html>

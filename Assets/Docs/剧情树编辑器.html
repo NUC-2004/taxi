@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>剧情树编辑器</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #111317;
+            --panel: #1a1d23;
+            --panel-2: #22262e;
+            --border: #3a414c;
+            --text: #ede7dc;
+            --muted: #afa99f;
+            --accent: #d2a15f;
+            --accent-2: #f0c57a;
+            --danger: #b76f6f;
+            --line: #4c5563;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: minmax(340px, 1.15fr) minmax(340px, 0.85fr);
+            min-height: 100vh;
+        }
+
+        .panel {
+            padding: 20px;
+        }
+
+        .left {
+            border-right: 1px solid var(--border);
+            background: linear-gradient(180deg, #13161a 0%, #171b20 100%);
+        }
+
+        .right {
+            background: #15181d;
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+
+        h1, h2, h3, p {
+            margin: 0;
+        }
+
+        .title {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        button, input, textarea {
+            font: inherit;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 10px 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+        }
+
+        button.secondary {
+            background: transparent;
+        }
+
+        button.danger {
+            border-color: #6f4545;
+            color: #f0c3c3;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .section-title {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tree-wrap {
+            max-height: calc(100vh - 180px);
+            overflow: auto;
+            padding: 4px 4px 24px;
+        }
+
+        .tree-root {
+            list-style: none;
+            margin: 0;
+            padding: 0 0 0 8px;
+        }
+
+        .tree-root ul {
+            list-style: none;
+            margin: 0;
+            padding-left: 28px;
+            position: relative;
+        }
+
+        .tree-root ul::before {
+            content: "";
+            position: absolute;
+            left: 11px;
+            top: 0;
+            bottom: 8px;
+            width: 1px;
+            background: var(--line);
+        }
+
+        .tree-root li {
+            position: relative;
+            margin: 10px 0 0;
+        }
+
+        .tree-root li::before {
+            content: "";
+            position: absolute;
+            left: -17px;
+            top: 20px;
+            width: 17px;
+            height: 1px;
+            background: var(--line);
+        }
+
+        .tree-root > li::before {
+            display: none;
+        }
+
+        .node {
+            border: 1px solid var(--border);
+            background: #22262d;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            min-width: 220px;
+            max-width: 360px;
+        }
+
+        .node.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px rgba(210, 161, 95, 0.35);
+        }
+
+        .node-title {
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+
+        .node-id {
+            color: var(--accent-2);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .node-meta,
+        .branch-meta {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .branch-tag {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            background: #2b3038;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0 0 8px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .label-title {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            background: #23272f;
+            color: var(--text);
+            border-radius: 6px;
+            padding: 10px 12px;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 92px;
+            resize: vertical;
+            line-height: 1.55;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .branch-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .branch-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            background: #20242b;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .row > * {
+            flex: 1 1 160px;
+        }
+
+        .hint {
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .empty {
+            color: var(--muted);
+            padding: 8px 0;
+        }
+
+        .footer-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        @media (max-width: 980px) {
+            .page {
+                grid-template-columns: 1fr;
+            }
+
+            .left {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .tree-wrap {
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="panel left">
+            <div class="eyebrow">Story Tool</div>
+            <h1 class="title">剧情树编辑器</h1>
+            <p class="subtitle">
+                这是一个空白结构工具，用来搭关卡分支，不预填剧本文案。<br>
+                你可以新增节点、增加分支、改分支名、导出 JSON，后面再慢慢填文本。
+            </p>
+
+            <div class="toolbar">
+                <button id="newTreeButton">新建剧情树</button>
+                <button id="addChildButton">新增子分支</button>
+                <button id="addSiblingButton">新增同级</button>
+                <button id="deleteNodeButton" class="danger">删除当前节点</button>
+            </div>
+
+            <div class="toolbar">
+                <button id="exportButton" class="secondary">导出 JSON</button>
+                <button id="importButton" class="secondary">导入 JSON</button>
+                <button id="copyJsonButton" class="secondary">复制 JSON</button>
+            </div>
+
+            <div class="card">
+                <div class="section-title">剧情树</div>
+                <div class="tree-wrap">
+                    <div id="treeContainer"></div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="panel right">
+            <div class="card">
+                <div class="section-title">当前节点</div>
+                <div id="emptyState" class="hint">
+                    先在左边选中一个节点。<br>
+                    建议从根节点开始，一点点往下加。
+                </div>
+                <div id="editor" style="display:none;">
+                    <label>
+                        <span class="label-title">节点 ID</span>
+                        <input id="nodeIdInput" type="text" placeholder="例如：L0_OPEN">
+                    </label>
+
+                    <label>
+                        <span class="label-title">节点标题</span>
+                        <input id="nodeTitleInput" type="text" placeholder="例如：开场 / 第一次试探 / 车站前">
+                    </label>
+
+                    <label>
+                        <span class="label-title">节点备注</span>
+                        <textarea id="nodeNotesInput" placeholder="这里先写结构备注、情绪方向、信息点。剧本文案可以后面再补。"></textarea>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">分支列表</div>
+                <div id="branchesEditor" class="branch-list"></div>
+                <div class="footer-tools">
+                    <button id="appendBranchButton">给当前节点加一条分支</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">使用建议</div>
+                <div class="hint">
+                    1. 一个节点代表一段剧情状态，不一定是一整段对白。<br>
+                    2. 分支名建议先写成“态度 / 结果 / 条件”，例如：沉默、追问、缓和。<br>
+                    3. 先搭树，再填文本，会轻松很多。<br>
+                    4. 页面会自动保存到浏览器本地。
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const STORAGE_KEY = "story-tree-editor-data-v1";
+
+        let idCounter = 1;
+        let tree = loadTree();
+        let selectedNodeId = tree.id;
+
+        const treeContainer = document.getElementById("treeContainer");
+        const emptyState = document.getElementById("emptyState");
+        const editor = document.getElementById("editor");
+        const branchesEditor = document.getElementById("branchesEditor");
+        const nodeIdInput = document.getElementById("nodeIdInput");
+        const nodeTitleInput = document.getElementById("nodeTitleInput");
+        const nodeNotesInput = document.getElementById("nodeNotesInput");
+
+        function createEmptyNode(title = "新节点") {
+            return {
+                id: `NODE_${idCounter++}`,
+                title,
+                notes: "",
+                branches: []
+            };
+        }
+
+        function loadTree() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                try {
+                    const parsed = JSON.parse(raw);
+                    idCounter = Math.max(findMaxCounter(parsed) + 1, 1);
+                    return parsed;
+                } catch {
+                }
+            }
+
+            return {
+                id: "ROOT",
+                title: "根节点",
+                notes: "",
+                branches: []
+            };
+        }
+
+        function saveTree() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tree, null, 2));
+        }
+
+        function findMaxCounter(node) {
+            let max = 0;
+            const match = /NODE_(\d+)/.exec(node.id || "");
+            if (match) {
+                max = Number(match[1]);
+            }
+
+            (node.branches || []).forEach((branch) => {
+                max = Math.max(max, findMaxCounter(branch.target));
+            });
+
+            return max;
+        }
+
+        function findNodeAndParent(node, targetId, parent = null) {
+            if (node.id === targetId) {
+                return { node, parent };
+            }
+
+            for (const branch of node.branches) {
+                const found = findNodeAndParent(branch.target, targetId, node);
+                if (found) {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        function renderTree() {
+            treeContainer.innerHTML = "";
+            const rootList = document.createElement("ul");
+            rootList.className = "tree-root";
+            rootList.appendChild(renderNodeItem(tree, null));
+            treeContainer.appendChild(rootList);
+        }
+
+        function renderNodeItem(node, branchLabel) {
+            const li = document.createElement("li");
+
+            if (branchLabel) {
+                const tag = document.createElement("div");
+                tag.className = "branch-tag";
+                tag.textContent = branchLabel || "未命名分支";
+                li.appendChild(tag);
+            }
+
+            const card = document.createElement("div");
+            card.className = "node";
+            if (node.id === selectedNodeId) {
+                card.classList.add("selected");
+            }
+            card.addEventListener("click", () => {
+                selectedNodeId = node.id;
+                renderAll();
+            });
+
+            const title = document.createElement("div");
+            title.className = "node-title";
+            title.textContent = node.title || "未命名节点";
+
+            const id = document.createElement("div");
+            id.className = "node-id";
+            id.textContent = node.id;
+
+            const meta = document.createElement("div");
+            meta.className = "node-meta";
+            meta.textContent = `分支数：${node.branches.length}`;
+
+            card.appendChild(title);
+            card.appendChild(id);
+            card.appendChild(meta);
+            li.appendChild(card);
+
+            if (node.branches.length > 0) {
+                const ul = document.createElement("ul");
+                node.branches.forEach((branch) => {
+                    ul.appendChild(renderNodeItem(branch.target, branch.label));
+                });
+                li.appendChild(ul);
+            }
+
+            return li;
+        }
+
+        function renderEditor() {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found) {
+                emptyState.style.display = "";
+                editor.style.display = "none";
+                branchesEditor.innerHTML = "";
+                return;
+            }
+
+            const { node } = found;
+            emptyState.style.display = "none";
+            editor.style.display = "";
+
+            nodeIdInput.value = node.id || "";
+            nodeTitleInput.value = node.title || "";
+            nodeNotesInput.value = node.notes || "";
+
+            branchesEditor.innerHTML = "";
+            if (node.branches.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "empty";
+                empty.textContent = "这个节点还没有分支。";
+                branchesEditor.appendChild(empty);
+                return;
+            }
+
+            node.branches.forEach((branch, index) => {
+                const item = document.createElement("div");
+                item.className = "branch-item";
+
+                const label = document.createElement("label");
+                label.innerHTML = `
+                    <span class="label-title">分支名称</span>
+                    <input type="text" value="${escapeHtml(branch.label || "")}" data-branch-label="${index}">
+                `;
+
+                const targetInfo = document.createElement("div");
+                targetInfo.className = "branch-meta";
+                targetInfo.textContent = `目标节点：${branch.target.id} / ${branch.target.title || "未命名节点"}`;
+
+                const row = document.createElement("div");
+                row.className = "row";
+
+                const jumpButton = document.createElement("button");
+                jumpButton.textContent = "跳到这个子节点";
+                jumpButton.addEventListener("click", () => {
+                    selectedNodeId = branch.target.id;
+                    renderAll();
+                });
+
+                const addSiblingButton = document.createElement("button");
+                addSiblingButton.className = "secondary";
+                addSiblingButton.textContent = "在这条下面再加一支";
+                addSiblingButton.addEventListener("click", () => {
+                    node.branches.splice(index + 1, 0, {
+                        label: "新分支",
+                        target: createEmptyNode()
+                    });
+                    saveTree();
+                    renderAll();
+                });
+
+                const removeButton = document.createElement("button");
+                removeButton.className = "danger";
+                removeButton.textContent = "删除这条分支";
+                removeButton.addEventListener("click", () => {
+                    node.branches.splice(index, 1);
+                    saveTree();
+                    renderAll();
+                });
+
+                row.appendChild(jumpButton);
+                row.appendChild(addSiblingButton);
+                row.appendChild(removeButton);
+
+                item.appendChild(label);
+                item.appendChild(targetInfo);
+                item.appendChild(row);
+                branchesEditor.appendChild(item);
+            });
+
+            branchesEditor.querySelectorAll("input[data-branch-label]").forEach((input) => {
+                input.addEventListener("input", (event) => {
+                    const branchIndex = Number(event.target.getAttribute("data-branch-label"));
+                    node.branches[branchIndex].label = event.target.value;
+                    saveTree();
+                    renderTree();
+                });
+            });
+        }
+
+        function renderAll() {
+            renderTree();
+            renderEditor();
+        }
+
+        function escapeHtml(value) {
+            return value
+                .replaceAll("&", "&amp;")
+                .replaceAll("\"", "&quot;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;");
+        }
+
+        nodeIdInput.addEventListener("input", (event) => {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found) {
+                return;
+            }
+
+            found.node.id = event.target.value || found.node.id;
+            selectedNodeId = found.node.id;
+            saveTree();
+            renderAll();
+        });
+
+        nodeTitleInput.addEventListener("input", (event) => {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found) {
+                return;
+            }
+
+            found.node.title = event.target.value;
+            saveTree();
+            renderTree();
+        });
+
+        nodeNotesInput.addEventListener("input", (event) => {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found) {
+                return;
+            }
+
+            found.node.notes = event.target.value;
+            saveTree();
+        });
+
+        document.getElementById("appendBranchButton").addEventListener("click", () => {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found) {
+                return;
+            }
+
+            found.node.branches.push({
+                label: "新分支",
+                target: createEmptyNode()
+            });
+            saveTree();
+            renderAll();
+        });
+
+        document.getElementById("addChildButton").addEventListener("click", () => {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found) {
+                return;
+            }
+
+            found.node.branches.push({
+                label: "新分支",
+                target: createEmptyNode()
+            });
+            saveTree();
+            renderAll();
+        });
+
+        document.getElementById("addSiblingButton").addEventListener("click", () => {
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found || !found.parent) {
+                return;
+            }
+
+            const parent = found.parent;
+            const index = parent.branches.findIndex((branch) => branch.target.id === selectedNodeId);
+            if (index === -1) {
+                return;
+            }
+
+            parent.branches.splice(index + 1, 0, {
+                label: "新分支",
+                target: createEmptyNode()
+            });
+            saveTree();
+            renderAll();
+        });
+
+        document.getElementById("deleteNodeButton").addEventListener("click", () => {
+            if (selectedNodeId === tree.id) {
+                return;
+            }
+
+            const found = findNodeAndParent(tree, selectedNodeId);
+            if (!found || !found.parent) {
+                return;
+            }
+
+            found.parent.branches = found.parent.branches.filter((branch) => branch.target.id !== selectedNodeId);
+            selectedNodeId = found.parent.id;
+            saveTree();
+            renderAll();
+        });
+
+        document.getElementById("newTreeButton").addEventListener("click", () => {
+            tree = {
+                id: "ROOT",
+                title: "根节点",
+                notes: "",
+                branches: []
+            };
+            selectedNodeId = tree.id;
+            idCounter = 1;
+            saveTree();
+            renderAll();
+        });
+
+        document.getElementById("exportButton").addEventListener("click", () => {
+            const blob = new Blob([JSON.stringify(tree, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "剧情树.json";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        document.getElementById("copyJsonButton").addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(JSON.stringify(tree, null, 2));
+            } catch {
+                alert("复制失败。");
+            }
+        });
+
+        document.getElementById("importButton").addEventListener("click", () => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = ".json,application/json";
+            input.addEventListener("change", () => {
+                const file = input.files && input.files[0];
+                if (!file) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        tree = JSON.parse(String(reader.result));
+                        idCounter = Math.max(findMaxCounter(tree) + 1, 1);
+                        selectedNodeId = tree.id;
+                        saveTree();
+                        renderAll();
+                    } catch {
+                        alert("导入失败，JSON 格式有问题。");
+                    }
+                };
+                reader.readAsText(file, "utf-8");
+            });
+            input.click();
+        });
+
+        renderAll();
+    </script>
+</body>
+</html>

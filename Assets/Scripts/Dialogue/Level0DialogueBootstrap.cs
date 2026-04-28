@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public static class Level0DialogueBootstrap
 {
-    public const string Level0SceneName = "Levle0";
+    public const string Level0SceneName = "Level0";
 
     public static void StartLevel0()
     {
