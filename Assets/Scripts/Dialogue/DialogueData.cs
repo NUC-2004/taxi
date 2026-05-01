@@ -8,6 +8,7 @@ public enum DialoguePhase
     None,
     NpcSpeaking,
     PlayerResponse,
+    Failed,
     Complete
 }
 

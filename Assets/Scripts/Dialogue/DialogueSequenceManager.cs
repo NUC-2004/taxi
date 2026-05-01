@@ -28,6 +28,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     private string pendingNextBlockId;
     private NpcSpeakingBlock activeBlock;
     private string loadedSequenceId = "Level0";
+    private bool sequenceFailed;
 
     public event Action<DialoguePhase> PhaseChanged;
     public event Action<NpcSpeakingBlock, int, int> BlockChanged;
@@ -36,6 +37,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     public event Action<float, float> ResponseTimerChanged;
     public event Action<int, int, int> AffectionChanged;
     public event Action<ResponseResult> ResponseResolved;
+    public event Action SequenceFailed;
     public event Action SequenceCompleted;
 
     public DialoguePhase CurrentPhase { get; private set; } = DialoguePhase.None;
@@ -70,6 +72,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         }
 
         activeBlock = null;
+        sequenceFailed = false;
         CurrentResponseDurationSeconds = 0f;
         affection = Mathf.Clamp(initialAffection, minAffection, maxAffection);
         AffectionChanged?.Invoke(affection, minAffection, maxAffection);
@@ -84,6 +87,11 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             return;
         }
 
+        if (IsOptionLocked(option))
+        {
+            return;
+        }
+
         waitingForResponse = false;
         if (activeBlock != null)
         {
@@ -91,6 +99,11 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         }
         pendingNextBlockId = option.nextBlockId;
         ApplyAffectionDelta(option.affectionDelta);
+        if (sequenceFailed)
+        {
+            return;
+        }
+
         ResponseResolved?.Invoke(new ResponseResult(true, option, option.affectionDelta, pendingNextBlockId));
     }
 
@@ -113,9 +126,18 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             if (block.allowsPlayerResponse && GetAvailableResponseOptions(block).Count > 0)
             {
                 yield return RunResponseWindow(block);
+                if (sequenceFailed)
+                {
+                    yield break;
+                }
             }
 
             yield return new WaitForSeconds(betweenBlocksDelaySeconds);
+            if (sequenceFailed)
+            {
+                yield break;
+            }
+
             block = ResolveNextBlock(block, pendingNextBlockId);
         }
 
@@ -203,6 +225,11 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             StorySessionState.RecordNoResponse(block.blockId);
             pendingNextBlockId = block.noResponseNextBlockId;
             ApplyAffectionDelta(delta);
+            if (sequenceFailed)
+            {
+                yield break;
+            }
+
             ResponseResolved?.Invoke(new ResponseResult(false, null, delta, pendingNextBlockId));
         }
 
@@ -256,6 +283,26 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     {
         affection = Mathf.Clamp(affection + delta, minAffection, maxAffection);
         AffectionChanged?.Invoke(affection, minAffection, maxAffection);
+
+        if (delta < 0 &&
+            !sequenceFailed &&
+            string.Equals(loadedSequenceId, "Level1", StringComparison.OrdinalIgnoreCase) &&
+            affection <= minAffection)
+        {
+            TriggerSequenceFailure();
+        }
+    }
+
+    private void TriggerSequenceFailure()
+    {
+        sequenceFailed = true;
+        waitingForResponse = false;
+        pendingNextBlockId = null;
+        CurrentResponseDurationSeconds = 0f;
+        ResponseTimerChanged?.Invoke(0f, 0f);
+        NpcTextChanged?.Invoke("(Seems the passenger does not want to talk anymore.)");
+        SetPhase(DialoguePhase.Failed);
+        SequenceFailed?.Invoke();
     }
 
     private void SetPhase(DialoguePhase phase)
@@ -318,16 +365,17 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(option.requiredOptionId) &&
-                !StorySessionState.HasSelectedOption(option.requiredOptionId))
-            {
-                continue;
-            }
-
             availableOptions.Add(option);
         }
 
         return availableOptions;
+    }
+
+    public static bool IsOptionLocked(PlayerResponseOption option)
+    {
+        return option != null &&
+               !string.IsNullOrWhiteSpace(option.requiredOptionId) &&
+               !StorySessionState.HasSelectedOption(option.requiredOptionId);
     }
 
     private void LoadDialogueDataForActiveScene()
@@ -547,7 +595,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             new[]
             {
                 N("Just before midnight."),
-                N("Daniel is already in the cab. He flagged it down mid-call."),
+                N("The man is already in the cab. He flagged it down mid-call."),
                 N("By the time he properly settles in and closes the door, he has just hung up."),
                 N("He loosens his tie slightly. Sets his bag on his knees. Looks out the window at nothing in particular."),
                 Q("Weston Bridge, please."),
@@ -570,17 +618,17 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             -1,
             "L1_B1_MISS"));
 
-        blocks.Add(Block("L1_B1_A_REPLY", new[] { N("Daniel glances briefly at the rearview mirror."), Q("Not rough. Just long."), N("A distinction that matters to him. He does not explain it.") }, "L1_B2_SETUP"));
+        blocks.Add(Block("L1_B1_A_REPLY", new[] { N("The man glances briefly at the rearview mirror."), Q("Not rough. Just long."), N("A distinction that matters to him. He does not explain it.") }, "L1_B2_SETUP"));
         blocks.Add(Block("L1_B1_B_REPLY", new[] { Q("Some nights, the office is home."), N("Dry. He has said that before.") }, "L1_B2_SETUP"));
         blocks.Add(Block("L1_B1_C_REPLY", new[] { N("Something shifts faintly in his expression, between acknowledgment and mild surprise."), Q("Yeah. Suppose so."), N("He settles back. Looks out the window again.") }, "L1_B2_SETUP"));
-        blocks.Add(Block("L1_B1_MISS", new[] { N("Daniel does not need a response. He was not quite asking for one."), N("He looks out the window. The cab moves.") }, "L1_B2_SETUP"));
+        blocks.Add(Block("L1_B1_MISS", new[] { N("The man does not need a response. He was not quite asking for one."), N("He looks out the window. The cab moves.") }, "L1_B2_SETUP"));
 
         blocks.Add(Block(
             "L1_B2_SETUP",
             new[]
             {
                 N("Two or three minutes in."),
-                N("Daniel has been quiet."),
+                N("The man has been quiet."),
                 N("He picks up his phone, looks at something, sets it face-down on his knee."),
                 Q("Signed a proposal tonight I wasn't completely happy with."),
                 N("He says it evenly. Not a complaint. More like reading something off a ledger."),
@@ -599,20 +647,20 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 Option("L1_B2_C_WORKS", "Does it matter, if it works?", 0, "L1_B2_C_REPLY"),
                 Option("L1_B2_D_ROUGHWHY", "You said rough. Is this why?", 2, "L1_B2_D_REPLY", unlocked: true, requiredOptionId: "L1_B1_A_ROUGH")
             },
-            -1,
+            -3,
             "L1_B2_MISS"));
 
         blocks.Add(Block("L1_B2_A_REPLY", new[] { Q("It does."), N("He agrees too quickly. Like he has rehearsed that response."), Q("That's not really the point, though."), N("Said quietly, almost to himself. He does not elaborate.") }, "L1_B3_SETUP"));
         blocks.Add(Block("L1_B2_B_REPLY", new[] { N("He is quiet for a moment. The question landed somewhere."), Q("Something with less... optimisation."), N("A pause."), Q("There used to be a different answer to that question."), N("He does not continue.") }, "L1_B3_SETUP"));
         blocks.Add(Block("L1_B2_C_REPLY", new[] { N("Something shifts in his expression. Not irritation, more like recognition."), Q("That's what I told myself."), N("He looks out the window.") }, "L1_B3_SETUP"));
         blocks.Add(Block("L1_B2_D_REPLY", new[] { N("He checks the mirror and holds it slightly longer than before."), Q("...Not just this."), N("He does not elaborate. But it is the first time tonight he has not immediately walked something back.") }, "L1_B3_SETUP"));
-        blocks.Add(Block("L1_B2_MISS", new[] { N("Daniel glances at the mirror once, then back to the window."), Q("Anyway."), N("Closed.") }, "L1_B3_SETUP"));
+        blocks.Add(Block("L1_B2_MISS", new[] { N("The man glances at the mirror once, then back to the window."), Q("Anyway."), N("Closed.") }, "L1_B3_SETUP"));
 
         blocks.Add(Block(
             "L1_B3_SETUP",
             new[]
             {
-                N("Daniel has loosened up slightly, less like someone reading off a ledger and more like someone on a long drive home."),
+                N("The man has loosened up slightly, less like someone reading off a ledger and more like someone on a long drive home."),
                 Q("I do a lot of hiring."),
                 Q("Entry-level creatives, mostly."),
                 N("He is not really asking. He is warming up to something."),
@@ -635,7 +683,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 Option("L1_B3_E_WRONG", "Have you been wrong about someone?", 1, "L1_B3_E_REPLY"),
                 Option("L1_B3_D_DIFFERENT", "You said there was a different answer.", 2, "L1_B3_D_REPLY", unlocked: true, requiredOptionId: "L1_B2_B_MADE")
             },
-            -1,
+            -3,
             "L1_B3_MISS"));
 
         blocks.Add(Block("L1_B3_A_REPLY", new[] { Q("What do you mean?"), N("Genuine question, not defensive."), Q("Oh -- hire them anyway."), N("A pause."), Q("Sometimes. The work still gets done."), N("Said without cruelty. Somehow that makes it heavier.") }, "L1_B4_SETUP"));
@@ -650,7 +698,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             new[]
             {
                 N("They have passed the main overpass. Not far now."),
-                N("Daniel has been watching the city skyline."),
+                N("The man has been watching the city skyline."),
                 Q("I went to art school, actually."),
                 N("Offhand. Like it is trivia, not biography."),
                 Q("Small private place. Had a decent Fine Arts program, back then."),
@@ -671,7 +719,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 Option("L1_B4_C_MISS", "Do you miss it?", 1, "L1_B4_C_REPLY", keyword: true),
                 Option("L1_B4_D_PROTECT", "You said protect it. Did you?", 3, "L1_B4_D_REPLY", unlocked: true, requiredOptionId: "L1_B3_B_TEACH")
             },
-            -1,
+            -3,
             "L1_B4_MISS"));
 
         blocks.Add(Block("L1_B4_A_REPLY", new[] { Q("Is it?"), N("He asks it genuinely, not rhetorically."), Q("I've been trying to decide."), N("He does not say what he has decided.") }, "L1_B5_SETUP"));
@@ -719,7 +767,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             {
                 N("The cab pulls up outside the offices."),
                 N("A light is still on, two floors up."),
-                N("Daniel looks at it. Takes his bag. Does not move to get out immediately."),
+                N("The man looks at it. Takes his bag. Does not move to get out immediately."),
                 Q("Thanks."),
                 N("He checks his phone one more time."),
                 Q("Still got a few hours in me."),
@@ -740,7 +788,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 Option("L1_B6_C_WRITE", "Write back to that student.", 2, "L1_END_WRITE", unlocked: true, requiredOptionId: "L1_B5_B_WORK"),
                 Option("L1_B6_D_VERSION", "Back then, this wasn't good enough.", 2, "L1_END_VERSION", unlocked: true, requiredOptionId: "L1_B4_C_MISS")
             },
-            -1,
+            -3,
             "L1_END_MISS"));
 
         blocks.Add(Block("L1_END_CARE", new[] { N("He is already walking. But something in his pace has the shape of someone who heard it.") }, "END"));

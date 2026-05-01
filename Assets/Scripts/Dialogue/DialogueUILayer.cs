@@ -44,6 +44,8 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private static readonly Color OptionNormalColor = new Color(0.25f, 0.3f, 0.31f, 1f);
     private static readonly Color OptionSelectedColor = new Color(0.95f, 0.82f, 0.22f, 1f);
+    private static readonly Color OptionLockedColor = new Color(0.14f, 0.16f, 0.17f, 0.88f);
+    private static readonly Color OptionLockedTextColor = new Color(0.62f, 0.66f, 0.66f, 1f);
 
     private Text phaseText;
     private Text npcText;
@@ -74,6 +76,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private int selectedOptionIndex = -1;
     private bool isPaused;
     private bool isMouseConfirming;
+    private bool isFailureMenuActive;
     private string lastNpcDialogueText = string.Empty;
     private string preservedNpcTextBeforeResponse = string.Empty;
     private int currentAffectionValue;
@@ -128,13 +131,16 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (WasUpPressed())
         {
-            SelectOption(selectedOptionIndex <= 0 ? optionButtons.Count - 1 : selectedOptionIndex - 1);
+            SelectOption(FindSelectableOptionIndex(selectedOptionIndex, -1));
         }
         else if (WasDownPressed())
         {
-            SelectOption(selectedOptionIndex >= optionButtons.Count - 1 ? 0 : selectedOptionIndex + 1);
+            SelectOption(FindSelectableOptionIndex(selectedOptionIndex, 1));
         }
-        else if (WasConfirmPressed() && selectedOptionIndex >= 0 && selectedOptionIndex < activeOptions.Count)
+        else if (WasConfirmPressed() &&
+                 selectedOptionIndex >= 0 &&
+                 selectedOptionIndex < activeOptions.Count &&
+                 !DialogueSequenceManager.IsOptionLocked(activeOptions[selectedOptionIndex]))
         {
             dialogueManager.ChooseResponse(activeOptions[selectedOptionIndex]);
         }
@@ -278,6 +284,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         dialogueManager.ResponseTimerChanged -= HandleResponseTimerChanged;
         dialogueManager.AffectionChanged -= HandleAffectionChanged;
         dialogueManager.ResponseResolved -= HandleResponseResolved;
+        dialogueManager.SequenceFailed -= HandleSequenceFailed;
         dialogueManager.SequenceCompleted -= HandleSequenceCompleted;
     }
 
@@ -303,6 +310,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         dialogueManager.ResponseTimerChanged -= HandleResponseTimerChanged;
         dialogueManager.AffectionChanged -= HandleAffectionChanged;
         dialogueManager.ResponseResolved -= HandleResponseResolved;
+        dialogueManager.SequenceFailed -= HandleSequenceFailed;
         dialogueManager.SequenceCompleted -= HandleSequenceCompleted;
 
         dialogueManager.PhaseChanged += HandlePhaseChanged;
@@ -312,6 +320,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         dialogueManager.ResponseTimerChanged += HandleResponseTimerChanged;
         dialogueManager.AffectionChanged += HandleAffectionChanged;
         dialogueManager.ResponseResolved += HandleResponseResolved;
+        dialogueManager.SequenceFailed += HandleSequenceFailed;
         dialogueManager.SequenceCompleted += HandleSequenceCompleted;
     }
 
@@ -913,14 +922,16 @@ public sealed class DialogueUILayer : MonoBehaviour
             phaseText.text = "Phase: " + phase;
         }
 
-        if (phase == DialoguePhase.NpcSpeaking || phase == DialoguePhase.Complete)
+        if (phase == DialoguePhase.NpcSpeaking || phase == DialoguePhase.Complete || phase == DialoguePhase.Failed)
         {
             HideOptions();
             SetTimerVisible(false);
             HideResponseQuestion();
             if (responseHintText != null)
             {
-                responseHintText.text = phase == DialoguePhase.Complete ? "Complete" : "NPC speaking";
+                responseHintText.text = phase == DialoguePhase.Complete
+                    ? "Complete"
+                    : phase == DialoguePhase.Failed ? "Conversation ended" : "NPC speaking";
             }
         }
 
@@ -1021,6 +1032,7 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private void HandleSequenceCompleted()
     {
+        isFailureMenuActive = false;
         HideOptions();
         SetTimerVisible(false);
         if (phaseText != null)
@@ -1035,6 +1047,27 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
     }
 
+    private void HandleSequenceFailed()
+    {
+        isFailureMenuActive = true;
+        HideOptions(true);
+        SetTimerVisible(false);
+        SetDialoguePanelVisible(true);
+        SetNpcTextVisible(true);
+
+        if (phaseText != null)
+        {
+            phaseText.text = "Phase: Failed";
+        }
+
+        if (responseHintText != null)
+        {
+            responseHintText.text = "Conversation ended";
+        }
+
+        ShowCompletionMenu();
+    }
+
     private void ShowOptions(IReadOnlyList<PlayerResponseOption> options)
     {
         HideOptions(true);
@@ -1046,7 +1079,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         optionsRoot.gameObject.SetActive(true);
         activeOptions.Clear();
         activeOptions.AddRange(options);
-        selectedOptionIndex = 0;
+        selectedOptionIndex = FindFirstSelectableOptionIndex(options);
         bool useTimer = dialogueManager != null && dialogueManager.CurrentResponseDurationSeconds > 0f;
         SetTimerVisible(useTimer);
         SetTimerBar(useTimer ? 1f : 0f);
@@ -1070,6 +1103,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             int optionIndex = i;
             PlayerResponseOption option = options[i];
             Button button = CreateButton("Option " + (i + 1), optionsRoot, option.placeholderText);
+            button.interactable = !DialogueSequenceManager.IsOptionLocked(option);
             RectTransform rect = button.GetComponent<RectTransform>();
             const float spacing = 0.025f;
             float buttonHeight = (1f - spacing * (options.Count - 1)) / options.Count;
@@ -1122,8 +1156,8 @@ public sealed class DialogueUILayer : MonoBehaviour
     private void SyncDialoguePanelVisibility()
     {
         DialoguePhase phase = dialogueManager != null ? dialogueManager.CurrentPhase : DialoguePhase.None;
-        SetDialoguePanelVisible(phase == DialoguePhase.NpcSpeaking || phase == DialoguePhase.PlayerResponse);
-        SetNpcTextVisible(phase == DialoguePhase.NpcSpeaking);
+        SetDialoguePanelVisible(phase == DialoguePhase.NpcSpeaking || phase == DialoguePhase.PlayerResponse || phase == DialoguePhase.Failed);
+        SetNpcTextVisible(phase == DialoguePhase.NpcSpeaking || phase == DialoguePhase.Failed);
         SetResponsePanelVisible(phase == DialoguePhase.PlayerResponse);
     }
 
@@ -1173,7 +1207,8 @@ public sealed class DialogueUILayer : MonoBehaviour
             dialogueManager == null ||
             dialogueManager.CurrentPhase != DialoguePhase.PlayerResponse ||
             optionIndex < 0 ||
-            optionIndex >= activeOptions.Count)
+            optionIndex >= activeOptions.Count ||
+            DialogueSequenceManager.IsOptionLocked(activeOptions[optionIndex]))
         {
             return;
         }
@@ -1199,7 +1234,8 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (dialogueManager != null &&
             dialogueManager.CurrentPhase == DialoguePhase.PlayerResponse &&
             optionIndex >= 0 &&
-            optionIndex < activeOptions.Count)
+            optionIndex < activeOptions.Count &&
+            !DialogueSequenceManager.IsOptionLocked(activeOptions[optionIndex]))
         {
             dialogueManager.ChooseResponse(activeOptions[optionIndex]);
         }
@@ -1285,25 +1321,27 @@ public sealed class DialogueUILayer : MonoBehaviour
         Text title = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Title");
         if (title != null)
         {
-            title.text = GetCompletionTitle();
+            title.text = isFailureMenuActive ? "Shift Ended" : GetCompletionTitle();
         }
 
         Text desc = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Text");
         if (desc != null)
         {
-            desc.text = GetCompletionDescription();
+            desc.text = isFailureMenuActive
+                ? "Seems the passenger does not want to talk anymore."
+                : GetCompletionDescription();
         }
 
         Text continueLabel = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Continue Game Button/Label");
         if (continueLabel != null)
         {
-            continueLabel.text = GetContinueButtonLabel();
+            continueLabel.text = isFailureMenuActive ? "Retry" : GetContinueButtonLabel();
         }
 
         Text mainMenuLabel = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Main Menu Button/Label");
         if (mainMenuLabel != null)
         {
-            mainMenuLabel.text = "Return to Main Menu";
+            mainMenuLabel.text = isFailureMenuActive ? "End Shift" : "Return to Main Menu";
         }
     }
 
@@ -1381,6 +1419,12 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         Time.timeScale = 1f;
 
+        if (isFailureMenuActive)
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            return;
+        }
+
         switch (SceneManager.GetActiveScene().name)
         {
             case "Level0":
@@ -1441,10 +1485,18 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         for (int i = 0; i < optionButtons.Count; i++)
         {
+            bool isLocked = i < activeOptions.Count && DialogueSequenceManager.IsOptionLocked(activeOptions[i]);
             Image image = optionButtons[i].GetComponent<Image>();
             if (image != null)
             {
-                image.color = i == selectedOptionIndex ? OptionSelectedColor : OptionNormalColor;
+                if (isLocked)
+                {
+                    image.color = OptionLockedColor;
+                }
+                else
+                {
+                    image.color = i == selectedOptionIndex ? OptionSelectedColor : OptionNormalColor;
+                }
             }
 
             if (i < optionButtonLabels.Count && optionButtonLabels[i] != null)
@@ -1454,14 +1506,69 @@ public sealed class DialogueUILayer : MonoBehaviour
                     optionButtonLabels[i].text = GetOptionDisplayText(activeOptions[i]);
                 }
 
-                optionButtonLabels[i].color = i == selectedOptionIndex
-                    ? new Color(0.12f, 0.1f, 0.02f, 1f)
-                    : Color.white;
+                if (isLocked)
+                {
+                    optionButtonLabels[i].color = OptionLockedTextColor;
+                }
+                else
+                {
+                    optionButtonLabels[i].color = i == selectedOptionIndex
+                        ? new Color(0.12f, 0.1f, 0.02f, 1f)
+                        : Color.white;
+                }
                 optionButtonLabels[i].enabled = true;
                 optionButtonLabels[i].transform.SetAsLastSibling();
                 optionButtonLabels[i].gameObject.SetActive(true);
             }
         }
+    }
+
+    private static int FindFirstSelectableOptionIndex(IReadOnlyList<PlayerResponseOption> options)
+    {
+        if (options == null)
+        {
+            return -1;
+        }
+
+        for (int i = 0; i < options.Count; i++)
+        {
+            if (!DialogueSequenceManager.IsOptionLocked(options[i]))
+            {
+                return i;
+            }
+        }
+
+        return options.Count > 0 ? 0 : -1;
+    }
+
+    private int FindSelectableOptionIndex(int startIndex, int direction)
+    {
+        if (activeOptions.Count == 0)
+        {
+            return -1;
+        }
+
+        int step = direction < 0 ? -1 : 1;
+        int index = startIndex;
+        for (int i = 0; i < activeOptions.Count; i++)
+        {
+            index += step;
+            if (index < 0)
+            {
+                index = activeOptions.Count - 1;
+            }
+            else if (index >= activeOptions.Count)
+            {
+                index = 0;
+            }
+
+            if (!DialogueSequenceManager.IsOptionLocked(activeOptions[index]))
+            {
+                return index;
+            }
+        }
+
+        return startIndex;
     }
 
     private static Text EnsureButtonLabel(Button button, string labelText, int optionCount = 3)
@@ -1501,7 +1608,8 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (option.isKeywordOption || option.isUnlockedOption)
         {
-            return option.placeholderText + " ★";
+            string suffix = DialogueSequenceManager.IsOptionLocked(option) ? " (locked)" : string.Empty;
+            return option.placeholderText + suffix + " ★";
         }
 
         return option.placeholderText;
