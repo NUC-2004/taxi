@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -27,21 +27,27 @@ public sealed class DialogueUILayer : MonoBehaviour
     [SerializeField] private bool buildUiIfMissingOnStart = true;
     [SerializeField] private Canvas authoredCanvas;
     [SerializeField] private bool keepEditableHierarchyInEditMode = true;
+    [SerializeField] private bool autoApplyLayout = true;
 
     [SerializeField] private DialogueSequenceManager dialogueManager;
     [SerializeField] private string windowBackgroundResourcePath = "Level0UI/WindowBackground";
-    [SerializeField] private string cabinResourcePath = "Level0UI/CabinInterior";
+    [SerializeField] private string cabinResourcePath = "Level0UI/car";
     [SerializeField] private string calmExpressionResourcePath = "Level0UI/VeraCalm";
     [SerializeField] private string happyExpressionResourcePath = "Level0UI/VeraHappy";
     [SerializeField] private string angryExpressionResourcePath = "Level0UI/VeraAngry";
+    [SerializeField] private bool showMusicNextButtonDebugOverlay = true;
+
+    [Header("Text Layout")]
+    [SerializeField] private TextAnchor npcTextAlignment = TextAnchor.UpperLeft;
+    [SerializeField] private Vector2 npcTextOffsetMin = new Vector2(12f, 16f);
+    [SerializeField] private Vector2 npcTextOffsetMax = new Vector2(-24f, -14f);
 
     private static readonly Color OptionNormalColor = new Color(0.25f, 0.3f, 0.31f, 1f);
-    private static readonly Color OptionKeywordColor = new Color(0.45f, 0.32f, 0.16f, 1f);
-    private static readonly Color OptionUnlockedColor = new Color(0.18f, 0.34f, 0.36f, 1f);
     private static readonly Color OptionSelectedColor = new Color(0.95f, 0.82f, 0.22f, 1f);
 
     private Text phaseText;
     private Text npcText;
+    private Text responseQuestionText;
     private Text responseHintText;
     private Text tutorialText;
     private Text affectionValueText;
@@ -56,6 +62,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private RectTransform timerLeftFill;
     private RectTransform timerRightFill;
     private RectTransform optionsRoot;
+    private RectTransform musicNextButtonRoot;
     private RectTransform pauseMenuRoot;
     private RectTransform completionMenuRoot;
     private Image windowBackgroundImage;
@@ -68,6 +75,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private bool isPaused;
     private bool isMouseConfirming;
     private string lastNpcDialogueText = string.Empty;
+    private string preservedNpcTextBeforeResponse = string.Empty;
     private int currentAffectionValue;
     private bool hasSeenAffectionValue;
     private ExpressionMood currentExpressionMood = ExpressionMood.Calm;
@@ -81,10 +89,21 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         ResolveReferencesFromHierarchy();
+        MergeResponseControlsIntoDialoguePanel();
         EnsureCompletionMenuExists();
-        ApplyResponsiveLayout();
+        RefreshCompletionMenuContent();
+        ApplyResponsiveLayoutIfEnabled();
         RefreshLevel0Visuals();
         Subscribe();
+        SyncResponsePanelVisibility();
+    }
+
+    private void Awake()
+    {
+        ResolveReferencesFromHierarchy();
+        MergeResponseControlsIntoDialoguePanel();
+        SetResponsePanelVisible(false);
+        SetDialoguePanelVisible(false);
     }
 
     private void Update()
@@ -98,6 +117,9 @@ public sealed class DialogueUILayer : MonoBehaviour
         {
             return;
         }
+
+        SyncResponsePanelVisibility();
+        TryHandleMusicNextButtonClick();
 
         if (dialogueManager == null || dialogueManager.CurrentPhase != DialoguePhase.PlayerResponse || optionButtons.Count == 0)
         {
@@ -134,13 +156,16 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         ResolveReferencesFromHierarchy();
+        MergeResponseControlsIntoDialoguePanel();
         EnsureCompletionMenuExists();
-        ApplyResponsiveLayout();
+        RefreshCompletionMenuContent();
+        ApplyResponsiveLayoutIfEnabled();
         RefreshLevel0Visuals();
         AutoConfigurePauseButtonsByLabel();
         RebindPauseButtonsInHierarchy();
         ValidatePauseBindings();
         Subscribe();
+        SyncResponsePanelVisibility();
     }
 
     [ContextMenu("Rebuild Editable Hierarchy")]
@@ -176,6 +201,13 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (NeedsUiRebuildInEditor())
         {
             BuildRuntimeUi();
+            EditorSceneManager.MarkSceneDirty(gameObject.scene);
+        }
+        else
+        {
+            ResolveReferencesFromHierarchy();
+            MergeResponseControlsIntoDialoguePanel();
+            ApplyResponsiveLayoutIfEnabled();
             EditorSceneManager.MarkSceneDirty(gameObject.scene);
         }
     }
@@ -314,6 +346,8 @@ public sealed class DialogueUILayer : MonoBehaviour
         cabinImage.preserveAspect = false;
         Stretch(cabinImage.rectTransform, new Vector2(0f, -0.02f), new Vector2(1f, 0.72f), Vector2.zero, Vector2.zero);
 
+        musicNextButtonRoot = CreateMusicNextButton(canvasRect).GetComponent<RectTransform>();
+
         RectTransform header = CreatePanel("Header", canvasRect, new Color(0.08f, 0.1f, 0.12f, 0.82f));
         Stretch(header, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -126f), new Vector2(620f, -28f));
 
@@ -327,7 +361,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         Stretch(affectionValueText.rectTransform, new Vector2(0.75f, 0.5f), new Vector2(1f, 0.5f), new Vector2(10f, -30f), new Vector2(-18f, 30f));
 
         RectTransform dialoguePanel = CreatePanel("NPC Dialogue Area", canvasRect, new Color(0.07f, 0.09f, 0.11f, 0.8f));
-        Stretch(dialoguePanel, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(44f, 440f), new Vector2(1040f, 760f));
+        Stretch(dialoguePanel, new Vector2(0.04f, 0f), new Vector2(0.74f, 0.30f), Vector2.zero, Vector2.zero);
 
         RectTransform expressionPanel = CreatePanel("Expression Area", canvasRect, new Color(0f, 0f, 0f, 0f));
         Stretch(expressionPanel, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-630f, -320f), new Vector2(-34f, -24f));
@@ -339,19 +373,24 @@ public sealed class DialogueUILayer : MonoBehaviour
         expressionFallbackText = CreateText("Expression Fallback", expressionPanel, "Expression importing...", 24, TextAnchor.MiddleCenter);
         Stretch(expressionFallbackText.rectTransform, Vector2.zero, Vector2.one, new Vector2(20f, 20f), new Vector2(-20f, -20f));
 
-        npcText = CreateText("NPC Text", dialoguePanel, string.Empty, 34, TextAnchor.MiddleLeft);
+        npcText = CreateText("NPC Text", dialoguePanel, string.Empty, 34, npcTextAlignment);
         npcText.horizontalOverflow = HorizontalWrapMode.Wrap;
         npcText.verticalOverflow = VerticalWrapMode.Overflow;
-        Stretch(npcText.rectTransform, Vector2.zero, Vector2.one, new Vector2(26f, 28f), new Vector2(-30f, -26f));
+        ApplyNpcTextLayout();
 
-        RectTransform responsePanel = CreatePanel("Player Response Area", canvasRect, new Color(0.08f, 0.09f, 0.1f, 0.86f));
-        Stretch(responsePanel, new Vector2(0.1f, 0.14f), new Vector2(0.9f, 0.38f), Vector2.zero, Vector2.zero);
+        responsePanelRoot = dialoguePanel;
 
-        responseHintText = CreateText("Response Hint Text", responsePanel, "Wait for your turn", 26, TextAnchor.MiddleLeft);
-        Stretch(responseHintText.rectTransform, new Vector2(0f, 0.8f), new Vector2(1f, 1f), new Vector2(24f, 0f), new Vector2(-24f, -8f));
+        responseQuestionText = CreateText("Response Question Text", dialoguePanel, string.Empty, 30, TextAnchor.MiddleLeft);
+        responseQuestionText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        responseQuestionText.verticalOverflow = VerticalWrapMode.Truncate;
+        responseQuestionText.color = new Color(0.96f, 0.97f, 0.95f, 1f);
+        Stretch(responseQuestionText.rectTransform, new Vector2(0f, 0.74f), new Vector2(1f, 1f), new Vector2(24f, 0f), new Vector2(-24f, -8f));
 
-        timerBarRoot = CreatePanel("Response Timer Bar", responsePanel, new Color(0.05f, 0.06f, 0.06f, 0.94f));
-        Stretch(timerBarRoot, new Vector2(0.2f, 0.66f), new Vector2(0.8f, 0.76f), Vector2.zero, Vector2.zero);
+        responseHintText = CreateText("Response Hint Text", dialoguePanel, "Wait for your turn", 26, TextAnchor.MiddleLeft);
+        Stretch(responseHintText.rectTransform, new Vector2(0f, 0.61f), new Vector2(1f, 0.73f), new Vector2(24f, 0f), new Vector2(-24f, 0f));
+
+        timerBarRoot = CreatePanel("Response Timer Bar", dialoguePanel, new Color(0.05f, 0.06f, 0.06f, 0.94f));
+        Stretch(timerBarRoot, new Vector2(0.2f, 0.52f), new Vector2(0.8f, 0.60f), Vector2.zero, Vector2.zero);
 
         Image centerMarker = CreateImage("Center Marker", timerBarRoot, new Color(1f, 1f, 1f, 0.35f));
         Stretch(centerMarker.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(-2f, 0f), new Vector2(2f, 0f));
@@ -361,11 +400,11 @@ public sealed class DialogueUILayer : MonoBehaviour
         SetTimerBar(0f);
         timerBarRoot.gameObject.SetActive(false);
 
-        optionsRoot = CreatePanel("Options Root", responsePanel, new Color(0f, 0f, 0f, 0f));
-        Stretch(optionsRoot, Vector2.zero, new Vector2(1f, 0.62f), new Vector2(20f, 16f), new Vector2(-20f, -8f));
+        optionsRoot = CreatePanel("Options Root", dialoguePanel, new Color(0f, 0f, 0f, 0f));
+        Stretch(optionsRoot, Vector2.zero, new Vector2(1f, 0.48f), new Vector2(20f, 16f), new Vector2(-20f, -8f));
 
         RectTransform tutorialPanel = CreatePanel("Tutorial Area", canvasRect, new Color(0.09f, 0.08f, 0.06f, 0.78f));
-        Stretch(tutorialPanel, new Vector2(0.04f, 0.4f), new Vector2(0.62f, 0.46f), Vector2.zero, Vector2.zero);
+        Stretch(tutorialPanel, new Vector2(0.04f, 0.30f), new Vector2(0.74f, 0.36f), Vector2.zero, Vector2.zero);
 
         tutorialText = CreateText("Tutorial Text", tutorialPanel, string.Empty, 24, TextAnchor.MiddleLeft);
         Stretch(tutorialText.rectTransform, Vector2.zero, Vector2.one, new Vector2(24f, 8f), new Vector2(-24f, -8f));
@@ -409,7 +448,7 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         headerRoot = FindRect("Level0 Dialogue Canvas/Header");
         dialoguePanelRoot = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area");
-        responsePanelRoot = FindRect("Level0 Dialogue Canvas/Player Response Area");
+        responsePanelRoot = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area");
         tutorialPanelRoot = FindRect("Level0 Dialogue Canvas/Tutorial Area");
         expressionPanelRoot = FindRect("Level0 Dialogue Canvas/Expression Area");
         phaseText = FindText("Level0 Dialogue Canvas/Header/Phase Text");
@@ -418,11 +457,25 @@ public sealed class DialogueUILayer : MonoBehaviour
         windowBackgroundImage = FindRect("Level0 Dialogue Canvas/Window Background")?.GetComponent<Image>();
         cabinImage = FindRect("Level0 Dialogue Canvas/Cabin Background")?.GetComponent<Image>();
         npcText = FindText("Level0 Dialogue Canvas/NPC Dialogue Area/NPC Text");
-        responseHintText = FindText("Level0 Dialogue Canvas/Player Response Area/Response Hint Text");
-        timerBarRoot = FindRect("Level0 Dialogue Canvas/Player Response Area/Response Timer Bar");
-        timerLeftFill = FindRect("Level0 Dialogue Canvas/Player Response Area/Response Timer Bar/Left Timer Fill");
-        timerRightFill = FindRect("Level0 Dialogue Canvas/Player Response Area/Response Timer Bar/Right Timer Fill");
-        optionsRoot = FindRect("Level0 Dialogue Canvas/Player Response Area/Options Root");
+        responseQuestionText = FindTextAny(
+            "Level0 Dialogue Canvas/NPC Dialogue Area/Response Question Text",
+            "Level0 Dialogue Canvas/Player Response Area/Response Question Text");
+        responseHintText = FindTextAny(
+            "Level0 Dialogue Canvas/NPC Dialogue Area/Response Hint Text",
+            "Level0 Dialogue Canvas/Player Response Area/Response Hint Text");
+        timerBarRoot = FindRectAny(
+            "Level0 Dialogue Canvas/NPC Dialogue Area/Response Timer Bar",
+            "Level0 Dialogue Canvas/Player Response Area/Response Timer Bar");
+        timerLeftFill = FindRectAny(
+            "Level0 Dialogue Canvas/NPC Dialogue Area/Response Timer Bar/Left Timer Fill",
+            "Level0 Dialogue Canvas/Player Response Area/Response Timer Bar/Left Timer Fill");
+        timerRightFill = FindRectAny(
+            "Level0 Dialogue Canvas/NPC Dialogue Area/Response Timer Bar/Right Timer Fill",
+            "Level0 Dialogue Canvas/Player Response Area/Response Timer Bar/Right Timer Fill");
+        optionsRoot = FindRectAny(
+            "Level0 Dialogue Canvas/NPC Dialogue Area/Options Root",
+            "Level0 Dialogue Canvas/Player Response Area/Options Root");
+        musicNextButtonRoot = FindRect("Level0 Dialogue Canvas/Music Next Button");
         tutorialText = FindText("Level0 Dialogue Canvas/Tutorial Area/Tutorial Text");
         pauseMenuRoot = FindRect("Level0 Dialogue Canvas/Pause Overlay");
         completionMenuRoot = FindRect("Level0 Dialogue Canvas/Completion Overlay");
@@ -432,7 +485,13 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private void EnsureCompletionMenuExists()
     {
-        if (completionMenuRoot != null || authoredCanvas == null)
+        if (completionMenuRoot != null)
+        {
+            RefreshCompletionMenuContent();
+            return;
+        }
+
+        if (authoredCanvas == null)
         {
             return;
         }
@@ -444,6 +503,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         completionMenuRoot = BuildCompletionMenu(canvasRect);
+        RefreshCompletionMenuContent();
         AutoConfigurePauseButtonsByLabel();
         RebindPauseButtonsInHierarchy();
     }
@@ -455,7 +515,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             return;
         }
 
-        ApplyResponsiveLayout();
+        ApplyResponsiveLayoutIfEnabled();
     }
 
     private void ApplyResponsiveLayout()
@@ -477,7 +537,7 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (dialoguePanelRoot != null)
         {
-            Stretch(dialoguePanelRoot, new Vector2(0.03f, 0.49f), new Vector2(0.63f, 0.78f), Vector2.zero, Vector2.zero);
+            Stretch(dialoguePanelRoot, new Vector2(0.04f, 0f), new Vector2(0.74f, 0.30f), Vector2.zero, Vector2.zero);
         }
 
         if (expressionPanelRoot != null)
@@ -487,13 +547,236 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (responsePanelRoot != null)
         {
-            Stretch(responsePanelRoot, new Vector2(0.08f, 0.11f), new Vector2(0.92f, 0.34f), Vector2.zero, Vector2.zero);
+            Stretch(responsePanelRoot, new Vector2(0.04f, 0f), new Vector2(0.74f, 0.30f), Vector2.zero, Vector2.zero);
         }
+
+        ApplyResponsePanelLayout();
+
+        if (responseQuestionText == null)
+        {
+            EnsureResponseQuestionTextExists();
+            ApplyResponsePanelLayout();
+        }
+
+        ApplyNpcTextLayout();
 
         if (tutorialPanelRoot != null)
         {
-            Stretch(tutorialPanelRoot, new Vector2(0.04f, 0.41f), new Vector2(0.62f, 0.47f), Vector2.zero, Vector2.zero);
+            Stretch(tutorialPanelRoot, new Vector2(0.04f, 0.30f), new Vector2(0.74f, 0.36f), Vector2.zero, Vector2.zero);
         }
+
+        if (musicNextButtonRoot == null)
+        {
+            EnsureMusicNextButtonExists();
+        }
+
+        if (musicNextButtonRoot != null)
+        {
+            EnsureMusicNextButtonOnTop();
+            Stretch(musicNextButtonRoot, new Vector2(0.862f, 0.066f), new Vector2(0.916f, 0.132f), Vector2.zero, Vector2.zero);
+            RefreshMusicNextButtonDebugVisual();
+            musicNextButtonRoot.SetAsLastSibling();
+        }
+    }
+
+    private void ApplyResponsiveLayoutIfEnabled()
+    {
+        if (!autoApplyLayout)
+        {
+            if (musicNextButtonRoot == null)
+            {
+                EnsureMusicNextButtonExists();
+            }
+
+            if (musicNextButtonRoot != null)
+            {
+                EnsureMusicNextButtonOnTop();
+                RefreshMusicNextButtonDebugVisual();
+                musicNextButtonRoot.SetAsLastSibling();
+            }
+
+            return;
+        }
+
+        ApplyResponsiveLayout();
+    }
+
+    private void ApplyResponsePanelLayout()
+    {
+        if (responsePanelRoot == null)
+        {
+            return;
+        }
+
+        if (responseQuestionText != null)
+        {
+            responseQuestionText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            responseQuestionText.verticalOverflow = VerticalWrapMode.Truncate;
+            responseQuestionText.resizeTextForBestFit = true;
+            responseQuestionText.resizeTextMinSize = 16;
+            responseQuestionText.resizeTextMaxSize = 30;
+            Stretch(responseQuestionText.rectTransform, new Vector2(0f, 0.74f), new Vector2(1f, 1f), new Vector2(24f, 0f), new Vector2(-24f, -8f));
+        }
+
+        if (responseHintText != null)
+        {
+            responseHintText.resizeTextForBestFit = true;
+            responseHintText.resizeTextMinSize = 12;
+            responseHintText.resizeTextMaxSize = 22;
+            Stretch(responseHintText.rectTransform, new Vector2(0f, 0.61f), new Vector2(1f, 0.73f), new Vector2(24f, 0f), new Vector2(-24f, 0f));
+        }
+
+        if (timerBarRoot != null)
+        {
+            Stretch(timerBarRoot, new Vector2(0.2f, 0.52f), new Vector2(0.8f, 0.60f), Vector2.zero, Vector2.zero);
+        }
+
+        if (optionsRoot != null)
+        {
+            Stretch(optionsRoot, Vector2.zero, new Vector2(1f, 0.48f), new Vector2(20f, 16f), new Vector2(-20f, -8f));
+        }
+    }
+
+    private void ApplyNpcTextLayout()
+    {
+        if (npcText == null)
+        {
+            return;
+        }
+
+        npcText.alignment = npcTextAlignment;
+        npcText.horizontalOverflow = HorizontalWrapMode.Wrap;
+        npcText.verticalOverflow = VerticalWrapMode.Overflow;
+        Stretch(npcText.rectTransform, Vector2.zero, Vector2.one, npcTextOffsetMin, npcTextOffsetMax);
+    }
+
+    private void EnsureResponseQuestionTextExists()
+    {
+        if (responseQuestionText != null || responsePanelRoot == null)
+        {
+            return;
+        }
+
+        responseQuestionText = CreateText("Response Question Text", responsePanelRoot, string.Empty, 30, TextAnchor.MiddleLeft);
+        responseQuestionText.color = new Color(0.96f, 0.97f, 0.95f, 1f);
+        responseQuestionText.gameObject.SetActive(false);
+    }
+
+    private void EnsureMusicNextButtonExists()
+    {
+        if (musicNextButtonRoot != null)
+        {
+            EnsureMusicNextButtonOnTop();
+            BindMusicNextButton(musicNextButtonRoot.GetComponent<Button>());
+            RefreshMusicNextButtonDebugVisual();
+            musicNextButtonRoot.SetAsLastSibling();
+            return;
+        }
+
+        Canvas canvas = authoredCanvas != null ? authoredCanvas : GetComponentInChildren<Canvas>(true);
+        if (canvas == null)
+        {
+            return;
+        }
+
+        musicNextButtonRoot = CreateMusicNextButton(canvas.GetComponent<RectTransform>()).GetComponent<RectTransform>();
+        EnsureMusicNextButtonOnTop();
+        RefreshMusicNextButtonDebugVisual();
+        musicNextButtonRoot.SetAsLastSibling();
+    }
+
+    private void EnsureMusicNextButtonOnTop()
+    {
+        if (musicNextButtonRoot == null)
+        {
+            return;
+        }
+
+        Canvas canvas = authoredCanvas != null ? authoredCanvas : GetComponentInChildren<Canvas>(true);
+        if (canvas == null)
+        {
+            return;
+        }
+
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
+        if (canvasRect != null && musicNextButtonRoot.parent != canvasRect)
+        {
+            musicNextButtonRoot.SetParent(canvasRect, false);
+        }
+    }
+
+    private Button CreateMusicNextButton(Transform parent)
+    {
+        Image image = CreateImage("Music Next Button", parent, new Color(0.2f, 0.9f, 1f, 0.18f));
+        image.raycastTarget = true;
+
+        Button button = image.gameObject.AddComponent<Button>();
+        button.transition = Selectable.Transition.None;
+        BindMusicNextButton(button);
+        return button;
+    }
+
+    private void BindMusicNextButton(Button button)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(HandleMusicNextButtonClicked);
+    }
+
+    private void HandleMusicNextButtonClicked()
+    {
+        Debug.Log("[DialogueUILayer] Music next button clicked.");
+        SceneMusicController.PlayNextTrack();
+    }
+
+    private void TryHandleMusicNextButtonClick()
+    {
+        if (musicNextButtonRoot == null || !WasPointerPressedThisFrame())
+        {
+            return;
+        }
+
+        Vector2 pointerPosition = GetPointerScreenPosition();
+        if (!RectTransformUtility.RectangleContainsScreenPoint(musicNextButtonRoot, pointerPosition, null))
+        {
+            return;
+        }
+
+        Debug.Log("[DialogueUILayer] Music next button click detected by fallback hit test.");
+        HandleMusicNextButtonClicked();
+    }
+
+    private void RefreshMusicNextButtonDebugVisual()
+    {
+        if (musicNextButtonRoot == null)
+        {
+            return;
+        }
+
+        Image image = musicNextButtonRoot.GetComponent<Image>();
+        if (image == null)
+        {
+            return;
+        }
+
+        image.color = showMusicNextButtonDebugOverlay
+            ? new Color(0.2f, 0.9f, 1f, 0.18f)
+            : new Color(1f, 1f, 1f, 0.001f);
+    }
+
+    private void HideResponseQuestion()
+    {
+        if (responseQuestionText == null)
+        {
+            return;
+        }
+
+        responseQuestionText.text = string.Empty;
+        responseQuestionText.gameObject.SetActive(false);
     }
 
     private void AutoConfigurePauseButtonsByLabel()
@@ -554,10 +837,73 @@ public sealed class DialogueUILayer : MonoBehaviour
         return found as RectTransform;
     }
 
+    private RectTransform FindRectAny(params string[] paths)
+    {
+        for (int i = 0; i < paths.Length; i++)
+        {
+            RectTransform found = FindRect(paths[i]);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
     private Text FindText(string path)
     {
         Transform found = transform.Find(path);
         return found != null ? found.GetComponent<Text>() : null;
+    }
+
+    private Text FindTextAny(params string[] paths)
+    {
+        for (int i = 0; i < paths.Length; i++)
+        {
+            Text found = FindText(paths[i]);
+            if (found != null)
+            {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    private void MergeResponseControlsIntoDialoguePanel()
+    {
+        if (dialoguePanelRoot == null)
+        {
+            return;
+        }
+
+        RectTransform legacyResponsePanel = FindRect("Level0 Dialogue Canvas/Player Response Area");
+        if (legacyResponsePanel != null)
+        {
+            MoveChildIfPresent(legacyResponsePanel, dialoguePanelRoot, "Response Question Text");
+            MoveChildIfPresent(legacyResponsePanel, dialoguePanelRoot, "Response Hint Text");
+            MoveChildIfPresent(legacyResponsePanel, dialoguePanelRoot, "Response Timer Bar");
+            MoveChildIfPresent(legacyResponsePanel, dialoguePanelRoot, "Options Root");
+            legacyResponsePanel.gameObject.SetActive(false);
+        }
+
+        responsePanelRoot = dialoguePanelRoot;
+        responseQuestionText = FindText("Level0 Dialogue Canvas/NPC Dialogue Area/Response Question Text");
+        responseHintText = FindText("Level0 Dialogue Canvas/NPC Dialogue Area/Response Hint Text");
+        timerBarRoot = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area/Response Timer Bar");
+        timerLeftFill = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area/Response Timer Bar/Left Timer Fill");
+        timerRightFill = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area/Response Timer Bar/Right Timer Fill");
+        optionsRoot = FindRect("Level0 Dialogue Canvas/NPC Dialogue Area/Options Root");
+    }
+
+    private static void MoveChildIfPresent(RectTransform oldParent, RectTransform newParent, string childName)
+    {
+        Transform child = oldParent.Find(childName);
+        if (child != null && child.parent != newParent)
+        {
+            child.SetParent(newParent, false);
+        }
     }
 
     private void HandlePhaseChanged(DialoguePhase phase)
@@ -571,12 +917,14 @@ public sealed class DialogueUILayer : MonoBehaviour
         {
             HideOptions();
             SetTimerVisible(false);
+            HideResponseQuestion();
             if (responseHintText != null)
             {
                 responseHintText.text = phase == DialoguePhase.Complete ? "Complete" : "NPC speaking";
             }
         }
 
+        SyncDialoguePanelVisibility();
         UpdatePortraitPhaseTint(phase);
     }
 
@@ -606,6 +954,12 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (npcText != null && string.IsNullOrWhiteSpace(npcText.text) && !string.IsNullOrWhiteSpace(lastNpcDialogueText))
         {
             npcText.text = lastNpcDialogueText;
+        }
+
+        if (npcText != null)
+        {
+            preservedNpcTextBeforeResponse = npcText.text;
+            npcText.text = string.Empty;
         }
 
         ShowOptions(options);
@@ -674,7 +1028,8 @@ public sealed class DialogueUILayer : MonoBehaviour
             phaseText.text = "Phase: Complete";
         }
 
-        if (SceneManager.GetActiveScene().name == "Level0")
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName == "Level0" || sceneName == "Level1")
         {
             ShowCompletionMenu();
         }
@@ -682,7 +1037,12 @@ public sealed class DialogueUILayer : MonoBehaviour
 
     private void ShowOptions(IReadOnlyList<PlayerResponseOption> options)
     {
-        HideOptions();
+        HideOptions(true);
+        EnsureResponseQuestionTextExists();
+        ApplyResponsePanelLayout();
+        SetDialoguePanelVisible(false);
+        SetResponsePanelVisible(true);
+
         optionsRoot.gameObject.SetActive(true);
         activeOptions.Clear();
         activeOptions.AddRange(options);
@@ -694,6 +1054,15 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (responseHintText != null)
         {
             responseHintText.text = "Use Up/Down to choose, Space or Enter to confirm";
+        }
+
+        if (responseQuestionText != null)
+        {
+            string questionText = !string.IsNullOrWhiteSpace(lastNpcDialogueText)
+                ? lastNpcDialogueText
+                : preservedNpcTextBeforeResponse;
+            responseQuestionText.text = questionText;
+            responseQuestionText.gameObject.SetActive(!string.IsNullOrWhiteSpace(questionText));
         }
 
         for (int i = 0; i < options.Count; i++)
@@ -708,7 +1077,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             float bottom = top - buttonHeight;
             Stretch(rect, new Vector2(0f, bottom), new Vector2(1f, top), Vector2.zero, Vector2.zero);
             button.onClick.AddListener(() => HandleMouseOptionClicked(optionIndex));
-            Text label = EnsureButtonLabel(button, option.placeholderText);
+            Text label = EnsureButtonLabel(button, GetOptionDisplayText(option), options.Count);
             optionButtons.Add(button);
             optionButtonLabels.Add(label);
         }
@@ -716,8 +1085,10 @@ public sealed class DialogueUILayer : MonoBehaviour
         RefreshOptionSelection();
     }
 
-    private void HideOptions()
+    private void HideOptions(bool preserveQuestionContext = false)
     {
+        SetResponsePanelVisible(false);
+
         if (optionsRoot != null)
         {
             optionsRoot.gameObject.SetActive(false);
@@ -736,6 +1107,64 @@ public sealed class DialogueUILayer : MonoBehaviour
         activeOptions.Clear();
         selectedOptionIndex = -1;
         isMouseConfirming = false;
+        HideResponseQuestion();
+        if (!preserveQuestionContext)
+        {
+            preservedNpcTextBeforeResponse = string.Empty;
+        }
+    }
+
+    private void SyncResponsePanelVisibility()
+    {
+        SyncDialoguePanelVisibility();
+    }
+
+    private void SyncDialoguePanelVisibility()
+    {
+        DialoguePhase phase = dialogueManager != null ? dialogueManager.CurrentPhase : DialoguePhase.None;
+        SetDialoguePanelVisible(phase == DialoguePhase.NpcSpeaking || phase == DialoguePhase.PlayerResponse);
+        SetNpcTextVisible(phase == DialoguePhase.NpcSpeaking);
+        SetResponsePanelVisible(phase == DialoguePhase.PlayerResponse);
+    }
+
+    private void SetDialoguePanelVisible(bool visible)
+    {
+        if (dialoguePanelRoot != null && dialoguePanelRoot.gameObject.activeSelf != visible)
+        {
+            dialoguePanelRoot.gameObject.SetActive(visible);
+        }
+    }
+
+    private void SetNpcTextVisible(bool visible)
+    {
+        if (npcText != null && npcText.gameObject.activeSelf != visible)
+        {
+            npcText.gameObject.SetActive(visible);
+        }
+    }
+
+    private void SetResponsePanelVisible(bool visible)
+    {
+        SetResponseElementVisible(responseQuestionText, visible && !string.IsNullOrWhiteSpace(responseQuestionText != null ? responseQuestionText.text : string.Empty));
+        SetResponseElementVisible(responseHintText, visible);
+
+        if (!visible && timerBarRoot != null && timerBarRoot.gameObject.activeSelf)
+        {
+            timerBarRoot.gameObject.SetActive(false);
+        }
+
+        if (optionsRoot != null && optionsRoot.gameObject.activeSelf != visible)
+        {
+            optionsRoot.gameObject.SetActive(visible);
+        }
+    }
+
+    private static void SetResponseElementVisible(Graphic graphic, bool visible)
+    {
+        if (graphic != null && graphic.gameObject.activeSelf != visible)
+        {
+            graphic.gameObject.SetActive(visible);
+        }
     }
 
     private void HandleMouseOptionClicked(int optionIndex)
@@ -813,19 +1242,19 @@ public sealed class DialogueUILayer : MonoBehaviour
         RectTransform panel = CreatePanel("Completion Panel", overlay, new Color(0.12f, 0.14f, 0.15f, 0.98f));
         Stretch(panel, new Vector2(0.33f, 0.32f), new Vector2(0.67f, 0.68f), Vector2.zero, Vector2.zero);
 
-        Text title = CreateText("Completion Title", panel, "Level 0 Complete", 38, TextAnchor.UpperCenter);
+        Text title = CreateText("Completion Title", panel, "Complete", 38, TextAnchor.UpperCenter);
         Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -58f), new Vector2(0f, -10f));
 
-        Text desc = CreateText("Completion Text", panel, "The first ride is over. Choose your next stop.", 24, TextAnchor.UpperCenter);
+        Text desc = CreateText("Completion Text", panel, "Choose what happens next.", 24, TextAnchor.UpperCenter);
         desc.horizontalOverflow = HorizontalWrapMode.Wrap;
         desc.verticalOverflow = VerticalWrapMode.Overflow;
         desc.color = new Color(0.86f, 0.88f, 0.88f, 1f);
         Stretch(desc.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(32f, -132f), new Vector2(-32f, -74f));
 
-        Button continueButton = CreatePauseButton("Continue Game Button", panel, "继续游戏", PauseMenuButtonAction.ActionType.ContinueGame);
+        Button continueButton = CreatePauseButton("Continue Game Button", panel, "Continue Game", PauseMenuButtonAction.ActionType.ContinueGame);
         Stretch(continueButton.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(36f, -10f), new Vector2(-36f, 58f));
 
-        Button mainMenuButton = CreatePauseButton("Completion Main Menu Button", panel, "回到主菜单", PauseMenuButtonAction.ActionType.ReturnToMainMenu);
+        Button mainMenuButton = CreatePauseButton("Completion Main Menu Button", panel, "Return to Main Menu", PauseMenuButtonAction.ActionType.ReturnToMainMenu);
         Stretch(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(36f, -102f), new Vector2(-36f, -34f));
 
         overlay.gameObject.SetActive(false);
@@ -841,7 +1270,76 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (completionMenuRoot != null)
         {
+            RefreshCompletionMenuContent();
             completionMenuRoot.gameObject.SetActive(true);
+        }
+    }
+
+    private void RefreshCompletionMenuContent()
+    {
+        if (completionMenuRoot == null)
+        {
+            return;
+        }
+
+        Text title = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Title");
+        if (title != null)
+        {
+            title.text = GetCompletionTitle();
+        }
+
+        Text desc = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Text");
+        if (desc != null)
+        {
+            desc.text = GetCompletionDescription();
+        }
+
+        Text continueLabel = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Continue Game Button/Label");
+        if (continueLabel != null)
+        {
+            continueLabel.text = GetContinueButtonLabel();
+        }
+
+        Text mainMenuLabel = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Main Menu Button/Label");
+        if (mainMenuLabel != null)
+        {
+            mainMenuLabel.text = "Return to Main Menu";
+        }
+    }
+
+    private string GetCompletionTitle()
+    {
+        switch (SceneManager.GetActiveScene().name)
+        {
+            case "Level1":
+                return "Level 1 Complete";
+            case "Level0":
+            default:
+                return "Level 0 Complete";
+        }
+    }
+
+    private string GetCompletionDescription()
+    {
+        switch (SceneManager.GetActiveScene().name)
+        {
+            case "Level1":
+                return "Daniel is gone. You can replay this ride or head back to the main menu.";
+            case "Level0":
+            default:
+                return "The first ride is over. Choose your next stop.";
+        }
+    }
+
+    private string GetContinueButtonLabel()
+    {
+        switch (SceneManager.GetActiveScene().name)
+        {
+            case "Level1":
+                return "Replay Level 1";
+            case "Level0":
+            default:
+                return "Continue to Level 1";
         }
     }
 
@@ -882,7 +1380,19 @@ public sealed class DialogueUILayer : MonoBehaviour
     public void ContinueGame()
     {
         Time.timeScale = 1f;
-        SceneManager.LoadScene("Level1");
+
+        switch (SceneManager.GetActiveScene().name)
+        {
+            case "Level0":
+                SceneManager.LoadScene("Level1");
+                break;
+            case "Level1":
+                SceneManager.LoadScene("Level1");
+                break;
+            default:
+                SceneManager.LoadScene("SampleScene");
+                break;
+        }
     }
 
     private void ValidatePauseBindings()
@@ -934,63 +1444,67 @@ public sealed class DialogueUILayer : MonoBehaviour
             Image image = optionButtons[i].GetComponent<Image>();
             if (image != null)
             {
-                image.color = i == selectedOptionIndex ? OptionSelectedColor : GetOptionBaseColor(i);
+                image.color = i == selectedOptionIndex ? OptionSelectedColor : OptionNormalColor;
             }
 
             if (i < optionButtonLabels.Count && optionButtonLabels[i] != null)
             {
                 if (i < activeOptions.Count)
                 {
-                    optionButtonLabels[i].text = activeOptions[i].placeholderText;
+                    optionButtonLabels[i].text = GetOptionDisplayText(activeOptions[i]);
                 }
 
                 optionButtonLabels[i].color = i == selectedOptionIndex
                     ? new Color(0.12f, 0.1f, 0.02f, 1f)
                     : Color.white;
+                optionButtonLabels[i].enabled = true;
+                optionButtonLabels[i].transform.SetAsLastSibling();
                 optionButtonLabels[i].gameObject.SetActive(true);
             }
         }
     }
 
-    private static Text EnsureButtonLabel(Button button, string labelText)
+    private static Text EnsureButtonLabel(Button button, string labelText, int optionCount = 3)
     {
         Text label = button.GetComponentInChildren<Text>(true);
         if (label == null)
         {
             label = CreateText("Label", button.transform, labelText, 26, TextAnchor.MiddleCenter);
-            Stretch(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(12f, 4f), new Vector2(-12f, -4f));
         }
+
+        int maxSize = optionCount >= 5 ? 20 : optionCount >= 4 ? 22 : 26;
+        int minSize = optionCount >= 5 ? 10 : 12;
 
         label.text = labelText;
         label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        label.fontSize = 26;
+        label.fontSize = maxSize;
         label.resizeTextForBestFit = true;
-        label.resizeTextMinSize = 18;
-        label.resizeTextMaxSize = 26;
+        label.resizeTextMinSize = minSize;
+        label.resizeTextMaxSize = maxSize;
         label.horizontalOverflow = HorizontalWrapMode.Wrap;
-        label.verticalOverflow = VerticalWrapMode.Truncate;
+        label.verticalOverflow = VerticalWrapMode.Overflow;
         label.alignment = TextAnchor.MiddleCenter;
         label.raycastTarget = false;
+        label.enabled = true;
+        label.color = Color.white;
+        Stretch(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(8f, 0f), new Vector2(-8f, 0f));
+        label.transform.SetAsLastSibling();
         return label;
     }
 
-    private Color GetOptionBaseColor(int optionIndex)
+    private static string GetOptionDisplayText(PlayerResponseOption option)
     {
-        if (optionIndex >= 0 && optionIndex < activeOptions.Count)
+        if (option == null)
         {
-            PlayerResponseOption option = activeOptions[optionIndex];
-            if (option.isUnlockedOption)
-            {
-                return OptionUnlockedColor;
-            }
-
-            if (option.isKeywordOption)
-            {
-                return OptionKeywordColor;
-            }
+            return string.Empty;
         }
 
-        return OptionNormalColor;
+        if (option.isKeywordOption || option.isUnlockedOption)
+        {
+            return option.placeholderText + " ★";
+        }
+
+        return option.placeholderText;
     }
 
     private void RefreshLevel0Visuals()
@@ -1016,6 +1530,12 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         if (cabinImage == null)
         {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(cabinResourcePath))
+        {
+            cabinImage.enabled = cabinImage.sprite != null;
             return;
         }
 
@@ -1188,6 +1708,24 @@ public sealed class DialogueUILayer : MonoBehaviour
         return Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
 #else
         return Input.GetKeyDown(KeyCode.Escape);
+#endif
+    }
+
+    private static bool WasPointerPressedThisFrame()
+    {
+#if ENABLE_INPUT_SYSTEM
+        return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+#else
+        return Input.GetMouseButtonDown(0);
+#endif
+    }
+
+    private static Vector2 GetPointerScreenPosition()
+    {
+#if ENABLE_INPUT_SYSTEM
+        return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+#else
+        return Input.mousePosition;
 #endif
     }
 

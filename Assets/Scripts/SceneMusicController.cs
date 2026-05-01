@@ -6,12 +6,21 @@ public sealed class SceneMusicController : MonoBehaviour
     private const string SampleSceneName = "SampleScene";
     private const string Level0SceneName = "Level0";
     private const string Level1SceneName = "Level1";
-    private const string SampleSceneMusicPath = "Audio/SampleSceneBgm";
-    private const string Level0MusicPath = "Audio/Level0Bgm";
+    private static readonly string[] MusicPlaylist =
+    {
+        "Audio/SampleSceneBgm",
+        "Audio/Level0Bgm",
+        "Audio/CityOfLove",
+        "Audio/ThisHeavyMetal",
+        "Audio/WaltzAFlatMajorOp69No1",
+        "Audio/Hajimi"
+    };
 
     private static SceneMusicController instance;
 
     private AudioSource musicSource;
+    private int currentTrackIndex;
+    private bool manualPlaylistMode;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -61,18 +70,52 @@ public sealed class SceneMusicController : MonoBehaviour
 
     private void ApplyMusicForScene(Scene scene)
     {
-        string resourcePath = GetMusicPath(scene.name);
-        if (string.IsNullOrEmpty(resourcePath))
+        if (manualPlaylistMode)
+        {
+            if (musicSource.clip != null && !musicSource.isPlaying)
+            {
+                musicSource.Play();
+            }
+            return;
+        }
+
+        int sceneTrackIndex = GetSceneDefaultTrackIndex(scene.name);
+        if (sceneTrackIndex < 0)
         {
             musicSource.Stop();
             musicSource.clip = null;
             return;
         }
 
+        PlayTrack(sceneTrackIndex);
+    }
+
+    public static void PlayNextTrack()
+    {
+        if (instance == null)
+        {
+            Debug.LogWarning("[SceneMusicController] PlayNextTrack called, but controller instance is missing.");
+            return;
+        }
+
+        instance.manualPlaylistMode = true;
+        int nextIndex = (instance.currentTrackIndex + 1) % MusicPlaylist.Length;
+        Debug.Log($"[SceneMusicController] Manual next track requested. Switching to index {nextIndex}.");
+        instance.PlayTrack(nextIndex);
+    }
+
+    private void PlayTrack(int trackIndex)
+    {
+        if (trackIndex < 0 || trackIndex >= MusicPlaylist.Length)
+        {
+            return;
+        }
+
+        string resourcePath = MusicPlaylist[trackIndex];
         AudioClip clip = Resources.Load<AudioClip>(resourcePath);
         if (clip == null)
         {
-            Debug.LogWarning($"Scene music clip not found at Resources/{resourcePath} for scene {scene.name}.");
+            Debug.LogWarning($"Scene music clip not found at Resources/{resourcePath}.");
             musicSource.Stop();
             musicSource.clip = null;
             return;
@@ -80,27 +123,32 @@ public sealed class SceneMusicController : MonoBehaviour
 
         if (musicSource.clip != clip)
         {
+            currentTrackIndex = trackIndex;
             musicSource.clip = clip;
+            musicSource.Play();
+            Debug.Log($"[SceneMusicController] Now playing: {clip.name} (index {trackIndex}).");
+            return;
         }
 
+        currentTrackIndex = trackIndex;
         if (!musicSource.isPlaying)
         {
             musicSource.Play();
+            Debug.Log($"[SceneMusicController] Resumed: {clip.name} (index {trackIndex}).");
         }
     }
 
-    private static string GetMusicPath(string sceneName)
+    private static int GetSceneDefaultTrackIndex(string sceneName)
     {
         switch (sceneName)
         {
             case SampleSceneName:
-                return SampleSceneMusicPath;
+                return 0;
             case Level0SceneName:
-                return Level0MusicPath;
             case Level1SceneName:
-                return Level0MusicPath;
+                return 1;
             default:
-                return null;
+                return -1;
         }
     }
 }
