@@ -6,6 +6,8 @@ using UnityEngine.SceneManagement;
 
 public sealed class DialogueSequenceManager : MonoBehaviour
 {
+    private const string ConversationFailureMessage = "(Seems the passenger does not want to talk anymore.)";
+
     [Header("Sequence")]
     public float secondsPerNpcFragment = 1.7f;
     public float extraNpcFragmentHoldSeconds = 0.5f;
@@ -46,6 +48,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     public int MaxAffection => maxAffection;
     public float ResponseWindowSeconds => responseWindowSeconds;
     public float CurrentResponseDurationSeconds { get; private set; }
+    public string FailureMessage { get; private set; } = ConversationFailureMessage;
 
     private void Start()
     {
@@ -73,11 +76,39 @@ public sealed class DialogueSequenceManager : MonoBehaviour
 
         activeBlock = null;
         sequenceFailed = false;
+        FailureMessage = ConversationFailureMessage;
         CurrentResponseDurationSeconds = 0f;
         affection = Mathf.Clamp(initialAffection, minAffection, maxAffection);
         AffectionChanged?.Invoke(affection, minAffection, maxAffection);
         BuildBlockLookup();
+        EnsureLevel2DrivingMinigame();
         sequenceRoutine = StartCoroutine(RunSequence());
+    }
+
+    public void FailSequence(string message)
+    {
+        if (sequenceFailed || CurrentPhase == DialoguePhase.Complete)
+        {
+            return;
+        }
+
+        if (sequenceRoutine != null)
+        {
+            StopCoroutine(sequenceRoutine);
+            sequenceRoutine = null;
+        }
+
+        TriggerSequenceFailure(string.IsNullOrWhiteSpace(message) ? ConversationFailureMessage : message);
+    }
+
+    public void ChangeAffection(int delta, string failureMessage = null)
+    {
+        if (sequenceFailed || CurrentPhase == DialoguePhase.Complete || delta == 0)
+        {
+            return;
+        }
+
+        ApplyAffectionDelta(delta, failureMessage);
     }
 
     public void ChooseResponse(PlayerResponseOption option)
@@ -87,7 +118,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             return;
         }
 
-        if (IsOptionLocked(option))
+        if (IsOptionLockedForCurrentState(option))
         {
             return;
         }
@@ -279,30 +310,48 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         return "COLD";
     }
 
-    private void ApplyAffectionDelta(int delta)
+    private void ApplyAffectionDelta(int delta, string failureMessage = null)
     {
         affection = Mathf.Clamp(affection + delta, minAffection, maxAffection);
         AffectionChanged?.Invoke(affection, minAffection, maxAffection);
 
         if (delta < 0 &&
             !sequenceFailed &&
-            string.Equals(loadedSequenceId, "Level1", StringComparison.OrdinalIgnoreCase) &&
+            IsFailureEnabledSequence() &&
             affection <= minAffection)
         {
-            TriggerSequenceFailure();
+            TriggerSequenceFailure(string.IsNullOrWhiteSpace(failureMessage) ? ConversationFailureMessage : failureMessage);
         }
     }
 
-    private void TriggerSequenceFailure()
+    private void TriggerSequenceFailure(string message)
     {
         sequenceFailed = true;
         waitingForResponse = false;
         pendingNextBlockId = null;
         CurrentResponseDurationSeconds = 0f;
+        FailureMessage = string.IsNullOrWhiteSpace(message) ? ConversationFailureMessage : message;
         ResponseTimerChanged?.Invoke(0f, 0f);
-        NpcTextChanged?.Invoke("(Seems the passenger does not want to talk anymore.)");
+        NpcTextChanged?.Invoke(FailureMessage);
         SetPhase(DialoguePhase.Failed);
         SequenceFailed?.Invoke();
+    }
+
+    private bool IsFailureEnabledSequence()
+    {
+        return string.Equals(loadedSequenceId, "Level1", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(loadedSequenceId, "Level2", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void EnsureLevel2DrivingMinigame()
+    {
+        if (!string.Equals(SceneManager.GetActiveScene().name, "Level2", StringComparison.OrdinalIgnoreCase) ||
+            GetComponent<DrivingMinigameController>() != null)
+        {
+            return;
+        }
+
+        gameObject.AddComponent<DrivingMinigameController>();
     }
 
     private void SetPhase(DialoguePhase phase)
@@ -378,6 +427,32 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                !StorySessionState.HasSelectedOption(option.requiredOptionId);
     }
 
+    public bool IsOptionLockedForCurrentState(PlayerResponseOption option)
+    {
+        return GetOptionLockReason(option) != null;
+    }
+
+    public string GetOptionLockReason(PlayerResponseOption option)
+    {
+        if (option == null)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(option.requiredOptionId) &&
+            !StorySessionState.HasSelectedOption(option.requiredOptionId))
+        {
+            return "earlier choice required";
+        }
+
+        if (option.requiredAffection > 0 && affection < option.requiredAffection)
+        {
+            return "Engagement " + affection + "/" + option.requiredAffection;
+        }
+
+        return null;
+    }
+
     private void LoadDialogueDataForActiveScene()
     {
         blocks.Clear();
@@ -386,6 +461,13 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         {
             loadedSequenceId = "Level1";
             LoadLevel1KeywordData();
+            return;
+        }
+
+        if (string.Equals(sceneName, "Level2", StringComparison.OrdinalIgnoreCase))
+        {
+            loadedSequenceId = "Level2";
+            LoadLevel2MargaretData();
             return;
         }
 
@@ -586,6 +668,218 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("She gets out. She doesn't wait for anything. Steady pace.")
             },
             "END"));
+    }
+
+    private void LoadLevel2MargaretData()
+    {
+        blocks.Add(Block(
+            "L2_B1_SETUP",
+            new[]
+            {
+                N("Just past midnight. The cab waits outside a low brick administration building."),
+                N("The rear door opens. Margaret gets in carefully, one hand on the doorframe."),
+                N("She sets an old leather briefcase upright on the seat beside her."),
+                Q("Eastlake. The apartments at the end of Oak Row, please."),
+                N("She does not reach for her phone. Her hand rests on the briefcase."),
+                Q("Take the long way, if you don't mind."),
+                Q("I'd rather not arrive too quickly.")
+            },
+            "L2_B1_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L2_B1_RESPONSE",
+            System.Array.Empty<string>(),
+            new List<PlayerResponseOption>
+            {
+                Option("L2_B1_A_LONGWAY", "The long way it is.", 0, "L2_B1_A_REPLY"),
+                Option("L2_B1_B_LONGDAY", "Long day?", 1, "L2_B1_B_REPLY"),
+                Option("L2_B1_C_QUIET", "I know a quiet route.", 0, "L2_B1_C_REPLY")
+            },
+            0,
+            "L2_B1_MISS"));
+
+        blocks.Add(Block("L2_B1_A_REPLY", new[] { N("She nods, just once. The cab pulls out."), Q("Thank you."), N("Said after a long day, when the word has more weight than usual.") }, "L2_B2_SETUP"));
+        blocks.Add(Block("L2_B1_B_REPLY", new[] { N("A faint, tired smile appears in the rearview mirror."), Q("Long enough."), N("She looks at the briefcase, not the window.") }, "L2_B2_SETUP"));
+        blocks.Add(Block("L2_B1_C_REPLY", new[] { Q("That would be kind."), N("She settles back slightly. Her shoulders come down a fraction.") }, "L2_B2_SETUP"));
+        blocks.Add(Block("L2_B1_MISS", new[] { N("Margaret does not seem to need a response. The cab moves."), N("She watches the building lights pass.") }, "L2_B2_SETUP"));
+
+        blocks.Add(Block(
+            "L2_B2_SETUP",
+            new[]
+            {
+                N("A few minutes into the ride. The streets are emptying."),
+                N("Margaret has been quiet - not uncomfortable, just somewhere else."),
+                Q("I had a meeting tonight."),
+                Q("Decisions about a department. Whether it stays or it doesn't."),
+                N("Her hand moves on the briefcase, then settles."),
+                Q("There was a student I kept thinking about, while we talked."),
+                Q("I didn't say her name. I rarely do, in those rooms - it doesn't help them."),
+                Q("Sometimes I wonder if it doesn't help me, either.")
+            },
+            "L2_B2_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L2_B2_RESPONSE",
+            System.Array.Empty<string>(),
+            new List<PlayerResponseOption>
+            {
+                Option("L2_B2_A_STUDENT", "What was the student working on?", 1, "L2_B2_A_REPLY"),
+                Option("L2_B2_B_NAMES", "It must be hard to keep names out.", 0, "L2_B2_B_REPLY"),
+                Option("L2_B2_C_ROOM", "Sounds like the room had already decided.", 0, "L2_B2_C_REPLY"),
+                Option("L2_B2_D_OUTCOME", "Which way did it go?", 1, "L2_B2_D_REPLY", keyword: true),
+                Option("L2_B2_E_STILL", "It sounds like you're still in that room.", 1, "L2_B2_E_REPLY", unlocked: true, requiredAffection: 2)
+            },
+            -1,
+            "L2_B2_MISS"));
+
+        blocks.Add(Block("L2_B2_A_REPLY", new[] { N("A pause - not defensive. She is choosing what to share."), Q("A piece. Something small. I thought it was good."), Q("I didn't tell her I thought so."), N("She says that last part as though noticing it for the first time.") }, "L2_B3_SETUP"));
+        blocks.Add(Block("L2_B2_B_REPLY", new[] { Q("Names change the room."), N("She looks out at a dark storefront."), Q("People stop hearing the question and start weighing the person.") }, "L2_B3_SETUP"));
+        blocks.Add(Block("L2_B2_C_REPLY", new[] { N("A small look in the mirror. It is almost approval."), Q("Rooms can do that before anyone speaks."), Q("By the time the vote arrives, everyone is only naming what happened earlier.") }, "L2_B3_SETUP"));
+        blocks.Add(Block("L2_B2_D_REPLY", new[] { N("She is quiet for one full intersection."), Q("It closed."), Q("Not tonight, officially. But tonight was when it became closed."), N("Her hand tightens on the briefcase.") }, "L2_B3_SETUP"));
+        blocks.Add(Block("L2_B2_E_REPLY", new[] { N("She exhales. Not quite a laugh."), Q("Yes."), Q("Some meetings have a way of coming home with you.") }, "L2_B3_SETUP"));
+        blocks.Add(Block("L2_B2_MISS", new[] { N("The cab continues through a long green light."), Q("It is not an interesting story."), N("She says it too carefully for it to be true.") }, "L2_B3_SETUP"));
+
+        blocks.Add(Block(
+            "L2_B3_SETUP",
+            new[]
+            {
+                N("Rain gathers in the seams of the windshield. Margaret watches the city pass in reflected pieces."),
+                Q("People talk as if regret has a clean shape."),
+                Q("As if you can put it in one hand and point at it."),
+                Q("I have never found it to be that courteous."),
+                N("A pause. Her thumb moves along the briefcase clasp."),
+                Q("Usually it is only the thing you didn't say in time.")
+            },
+            "L2_B3_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L2_B3_RESPONSE",
+            System.Array.Empty<string>(),
+            new List<PlayerResponseOption>
+            {
+                Option("L2_B3_A_UNSAID", "The things I didn't say.", 1, "L2_B3_A_REPLY"),
+                Option("L2_B3_B_DID", "What I did. At least it's honest.", 0, "L2_B3_B_REPLY"),
+                Option("L2_B3_C_OWED", "Depends who I owed the words to.", 1, "L2_B3_C_REPLY"),
+                Option("L2_B3_D_SOMEONE", "Was there someone you didn't say something to?", 1, "L2_B3_D_REPLY", keyword: true),
+                Option("L2_B3_E_NIGHT", "Whichever one keeps you up at night.", 1, "L2_B3_E_REPLY", unlocked: true, requiredAffection: 3)
+            },
+            -1,
+            "L2_B3_MISS"));
+
+        blocks.Add(Block("L2_B3_A_REPLY", new[] { Q("Yes."), N("She answers too quickly, then looks away."), Q("That is usually where I begin, too.") }, "L2_B4_SETUP"));
+        blocks.Add(Block("L2_B3_B_REPLY", new[] { Q("Honesty has its uses."), Q("It also has a talent for arriving late."), N("There is no rebuke in it. Only experience.") }, "L2_B4_SETUP"));
+        blocks.Add(Block("L2_B3_C_REPLY", new[] { N("She considers that with unusual care."), Q("That is closer to the matter, I think."), Q("Who was owed the words.") }, "L2_B4_SETUP"));
+        blocks.Add(Block("L2_B3_D_REPLY", new[] { N("Her face changes slightly in the mirror."), Q("There is always someone, isn't there?"), Q("The question is whether saying it now would help anyone but yourself.") }, "L2_B4_SETUP"));
+        blocks.Add(Block("L2_B3_E_REPLY", new[] { N("For the first time, Margaret looks directly at the mirror."), Q("That is a cruelly accurate measure."), Q("Yes. That one.") }, "L2_B4_SETUP"));
+        blocks.Add(Block("L2_B3_MISS", new[] { N("Margaret lets the question go unanswered."), Q("No need to make a philosophy of it."), N("But she sounds like she already has.") }, "L2_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L2_B4_SETUP",
+            new[]
+            {
+                N("The road bends toward the older part of the city. Neon and old brick slide across the glass."),
+                Q("She submitted something for an exhibition."),
+                Q("Or rather - I submitted it for her."),
+                N("Margaret's hand is still on the briefcase."),
+                Q("Without telling her."),
+                Q("Hartwell had one last student exhibition before the department went quiet."),
+                Q("I told myself I was only making sure the work was seen.")
+            },
+            "L2_B4_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L2_B4_RESPONSE",
+            System.Array.Empty<string>(),
+            new List<PlayerResponseOption>
+            {
+                Option("L2_B4_A_WHY", "Why didn't you tell her?", 1, "L2_B4_A_REPLY"),
+                Option("L2_B4_B_FINDOUT", "Will she find out it was you?", 0, "L2_B4_B_REPLY"),
+                Option("L2_B4_D_KNOWN", "She might rather have known.", 1, "L2_B4_D_REPLY", keyword: true),
+                Option("L2_B4_E_HARTWELL", "Hartwell - that's the school the news was about, isn't it?", 1, "L2_B4_E_REPLY", keyword: true),
+                Option("L2_B4_F_TONIGHT", "You were going to tell her tonight, weren't you?", 1, "L2_B4_F_REPLY", unlocked: true, requiredOptionId: "L2_B2_A_STUDENT"),
+                Option("L2_B4_G_COST", "It must have cost you, sending it in for her.", 1, "L2_B4_G_REPLY", unlocked: true, requiredAffection: 4)
+            },
+            -1,
+            "L2_B4_MISS"));
+
+        blocks.Add(Block("L2_B4_A_REPLY", new[] { N("Margaret gives a small, humorless smile."), Q("Because then it would have become a conversation about permission."), Q("And I was afraid I would lose my nerve in the name of respecting hers.") }, "L2_B5_SETUP"));
+        blocks.Add(Block("L2_B4_B_REPLY", new[] { Q("Eventually, perhaps."), Q("There is a calendar to being found out."), N("She says it like a joke. It does not land as one.") }, "L2_B5_SETUP"));
+        blocks.Add(Block("L2_B4_D_REPLY", new[] { N("She closes her eyes for a second, then opens them."), Q("Yes."), Q("That is the part I keep coming back to.") }, "L2_B5_SETUP"));
+        blocks.Add(Block("L2_B4_E_REPLY", new[] { N("The name sits in the cab for a moment."), Q("Yes. Hartwell."), Q("It sounds smaller when someone else says it."), N("She looks back to the window.") }, "L2_B5_SETUP"));
+        blocks.Add(Block("L2_B4_F_REPLY", new[] { N("Margaret's hand stops moving on the briefcase."), Q("I was working up to it."), Q("That is a very elegant phrase for failing to do something simple.") }, "L2_B5_SETUP"));
+        blocks.Add(Block("L2_B4_G_REPLY", new[] { N("She gives you a long look in the mirror."), Q("Some things cost less than not doing them."), Q("I am not sure which one this was.") }, "L2_B5_SETUP"));
+        blocks.Add(Block("L2_B4_MISS", new[] { N("The cab passes under a row of amber streetlights."), Q("It was not my finest professional judgment."), N("She says it like the safer version of a harder sentence.") }, "L2_B5_SETUP"));
+
+        blocks.Add(Block(
+            "L2_B5_SETUP",
+            new[]
+            {
+                N("The city thins. Apartment windows appear one by one in the distance."),
+                Q("People assume the worst regret is not having stopped someone."),
+                Q("From the wrong path, the wrong choice, whatever the word is for it."),
+                Q("It isn't, for me. Not the stopping."),
+                N("A pause. She is choosing whether to finish the thought."),
+                Q("My biggest regret isn't that I didn't stop someone."),
+                Q("It's the time I should have answered, and didn't."),
+                Q("I should have told her I thought it was good. While there was still time to.")
+            },
+            "L2_B5_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L2_B5_RESPONSE",
+            System.Array.Empty<string>(),
+            new List<PlayerResponseOption>
+            {
+                Option("L2_B5_A_WHO", "Who was it?", 0, "L2_B5_A_REPLY"),
+                Option("L2_B5_B_STILL", "Could you still say it?", 1, "L2_B5_B_REPLY"),
+                Option("L2_B5_C_SORRY", "I'm sorry.", 1, "L2_B5_C_REPLY"),
+                Option("L2_B5_D_MEANT", "She'll know you meant to.", 1, "L2_B5_D_REPLY", unlocked: true, requiredAffection: 5),
+                Option("L2_B5_E_ANSWER", "The one you didn't answer.", 1, "L2_B5_E_REPLY", unlocked: true, requiredOptionId: "L2_B3_E_NIGHT")
+            },
+            -1,
+            "L2_B5_MISS"));
+
+        blocks.Add(Block("L2_B5_A_REPLY", new[] { Q("Someone who would have done well to hear it earlier."), N("She does not give a name. She has never given a name.") }, "L2_B6_SETUP"));
+        blocks.Add(Block("L2_B5_B_REPLY", new[] { Q("I might."), Q("I think I might, tomorrow."), N("Said as though hearing the possibility for the first time.") }, "L2_B6_SETUP"));
+        blocks.Add(Block("L2_B5_C_REPLY", new[] { Q("Thank you."), N("She looks at the mirror. The thanks is for hearing it as something that needed sitting with, not solving.") }, "L2_B6_SETUP"));
+        blocks.Add(Block("L2_B5_D_REPLY", new[] { N("Her eyes go to the rearview, briefly. Something in her expression softens."), Q("That's a kind thing to assume."), Q("I'll try to make it true.") }, "L2_B6_SETUP"));
+        blocks.Add(Block("L2_B5_E_REPLY", new[] { N("The driver has done what she did not: finished the sentence."), Q("Yes."), Q("An afternoon, four years ago. She asked me whether she should keep going."), Q("I said something about discipline. I should have said something else.") }, "L2_B6_SETUP"));
+        blocks.Add(Block("L2_B5_MISS", new[] { N("She nods very slightly at the window."), Q("Yes. Some things are like that.") }, "L2_B6_SETUP"));
+
+        blocks.Add(Block(
+            "L2_B6_SETUP",
+            new[]
+            {
+                N("The cab pulls up at the end of Oak Row. A small block of apartments waits under a single lit window."),
+                N("Margaret does not move immediately. She places one hand flat on the briefcase."),
+                Q("Thank you. For taking the long way."),
+                Q("There used to be more lights on, on this row."),
+                Q("People keep them off now to save what they can."),
+                N("She opens the door. Sets one foot down. Does not get out yet.")
+            },
+            "L2_B6_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L2_B6_RESPONSE",
+            System.Array.Empty<string>(),
+            new List<PlayerResponseOption>
+            {
+                Option("L2_B6_A_TELL", "Tell her, tomorrow.", 1, "L2_END_TELL", unlocked: true, requiredAffection: 5),
+                Option("L2_B6_B_REST", "Get some rest.", 1, "L2_END_REST"),
+                Option("L2_B6_C_GOODNIGHT", "Goodnight.", 0, "L2_END_GOODNIGHT"),
+                Option("L2_B6_D_HARTWELL", "I won't tell anyone about Hartwell.", 1, "L2_END_HARTWELL", unlocked: true, requiredOptionId: "L2_B4_E_HARTWELL"),
+                Option("L2_B6_E_GOOD", "It was good of you, sending it in for her.", 1, "L2_END_GOOD", unlocked: true, requiredAffection: 3)
+            },
+            -1,
+            "L2_END_MISS",
+            0f));
+
+        blocks.Add(Block("L2_END_TELL", new[] { N("She pauses with one foot still in the cab."), Q("I'll try."), N("She says it without conviction and without pretence. Both, at once. She gets out.") }, "END"));
+        blocks.Add(Block("L2_END_REST", new[] { Q("I will. Eventually."), N("She gets out, adjusts the briefcase, and starts toward the door.") }, "END"));
+        blocks.Add(Block("L2_END_GOODNIGHT", new[] { Q("Goodnight."), N("She steps out, closes the door without slamming it, and walks at her own pace.") }, "END"));
+        blocks.Add(Block("L2_END_HARTWELL", new[] { N("She pauses fully. Looks at the rearview, briefly."), Q("I know."), Q("Thank you for that, too."), N("She gets out. Walks more slowly than before, but no less steadily.") }, "END"));
+        blocks.Add(Block("L2_END_GOOD", new[] { N("Her hand pauses on the briefcase strap."), Q("I hope so."), Q("Drive home safely."), N("She gets out and closes the door at her usual pace.") }, "END"));
+        blocks.Add(Block("L2_END_MISS", new[] { N("She gives the briefcase one last look, as though making sure she has not left anything behind."), N("Then she steps out. The door closes softly.") }, "END"));
     }
 
     private void LoadLevel1KeywordData()
@@ -1143,7 +1437,8 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         string nextBlockId,
         bool keyword = false,
         bool unlocked = false,
-        string requiredOptionId = null)
+        string requiredOptionId = null,
+        int requiredAffection = 0)
     {
         return new PlayerResponseOption(
             optionId,
@@ -1152,7 +1447,8 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             nextBlockId,
             keyword,
             unlocked,
-            requiredOptionId);
+            requiredOptionId,
+            requiredAffection);
     }
 
     private static string N(string text)

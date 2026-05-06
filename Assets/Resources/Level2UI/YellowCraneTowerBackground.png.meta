@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 85832bc010bff86489fb94742a522d41
+guid: 36be18dbbf80afd479660093bac5316e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 977558186954347941
-    second: Female Sprite by Sutemo_0
+      213: -4945563654804910132
+    second: YellowCraneTowerBackground_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -96,30 +96,17 @@ TextureImporter:
     ignorePlatformSupport: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
-  - serializedVersion: 4
-    buildTarget: WebGL
-    maxTextureSize: 2048
-    resizeAlgorithm: 0
-    textureFormat: -1
-    textureCompression: 1
-    compressionQuality: 50
-    crunchedCompression: 0
-    allowsAlphaSplitting: 0
-    overridden: 0
-    ignorePlatformSupport: 0
-    androidETC2FallbackOverride: 0
-    forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Female Sprite by Sutemo_0
+      name: YellowCraneTowerBackground_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1011
-        height: 1145
+        width: 1672
+        height: 941
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5a550b0edfbf09d00800000000000000
-      internalID: 977558186954347941
+      spriteID: ccf45450f04dd5bb0800000000000000
+      internalID: -4945563654804910132
       vertices: []
       indices: 
       edges: []
@@ -148,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Female Sprite by Sutemo_0: 977558186954347941
+      YellowCraneTowerBackground_0: -4945563654804910132
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

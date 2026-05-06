@@ -22,6 +22,7 @@ public sealed class PlayerResponseOption
     public bool isKeywordOption;
     public bool isUnlockedOption;
     public string requiredOptionId;
+    public int requiredAffection;
 
     public PlayerResponseOption(
         string optionId,
@@ -30,7 +31,8 @@ public sealed class PlayerResponseOption
         string nextBlockId = null,
         bool isKeywordOption = false,
         bool isUnlockedOption = false,
-        string requiredOptionId = null)
+        string requiredOptionId = null,
+        int requiredAffection = 0)
     {
         this.optionId = optionId;
         this.placeholderText = placeholderText;
@@ -39,6 +41,7 @@ public sealed class PlayerResponseOption
         this.isKeywordOption = isKeywordOption;
         this.isUnlockedOption = isUnlockedOption;
         this.requiredOptionId = requiredOptionId;
+        this.requiredAffection = requiredAffection;
     }
 }
 

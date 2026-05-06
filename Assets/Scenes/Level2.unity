@@ -192,11 +192,11 @@ MonoBehaviour:
   keepEditableHierarchyInEditMode: 1
   autoApplyLayout: 1
   dialogueManager: {fileID: 1002}
-  windowBackgroundResourcePath: Level1UI/Level1WindowBackground
+  windowBackgroundResourcePath: Level2UI/YellowCraneTowerBackground
   cabinResourcePath: Level0UI/CabinInterior
-  calmExpressionResourcePath: Level1UI/DanielCalm
-  happyExpressionResourcePath: Level1UI/DanielHappy
-  angryExpressionResourcePath: Level1UI/DanielAngry
+  calmExpressionResourcePath: Level2UI/Level2Calm
+  happyExpressionResourcePath: Level2UI/Level2Happy
+  angryExpressionResourcePath: Level2UI/Level2Angry
   showMusicNextButtonDebugOverlay: 1
   npcTextAlignment: 0
   npcTextOffsetMin: {x: 12, y: 16}
@@ -535,6 +535,7 @@ MonoBehaviour:
   m_Script: {fileID: 1823612531}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200758
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -629,6 +630,7 @@ MonoBehaviour:
   m_Script: {fileID: 1752890726}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,6 +643,7 @@ MonoBehaviour:
   m_Script: {fileID: 1430806308}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200763
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -653,6 +656,7 @@ MonoBehaviour:
   m_Script: {fileID: 1873276361}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -665,6 +669,7 @@ MonoBehaviour:
   m_Script: {fileID: 1111375416}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -677,6 +682,7 @@ MonoBehaviour:
   m_Script: {fileID: 1067055268}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200766
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -689,7 +695,7 @@ MonoBehaviour:
   m_Script: {fileID: 41344279}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
-  actionType: 2
+  actionType: 1
 --- !u!1 &233601876
 GameObject:
   m_ObjectHideFlags: 0
@@ -971,7 +977,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: Daniel is gone. The next route is ready.
+  m_Text: Daniel is gone. The shift can return to the route table.
 --- !u!222 &345582956
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1619,7 +1625,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -2200270371580066625, guid: ad96a502d322e6b4cb861fb063d7c9fa, type: 3}
+  m_Sprite: {fileID: -9105840260408570076, guid: dec86273ab3f7c44a8c9e406bc974163, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1772,6 +1778,7 @@ MonoBehaviour:
   m_Script: {fileID: 1823612531}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1866,6 +1873,7 @@ MonoBehaviour:
   m_Script: {fileID: 1752890726}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1878,6 +1886,7 @@ MonoBehaviour:
   m_Script: {fileID: 1430806308}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1890,6 +1899,7 @@ MonoBehaviour:
   m_Script: {fileID: 1873276361}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1902,6 +1912,7 @@ MonoBehaviour:
   m_Script: {fileID: 1111375416}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308200
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1914,6 +1925,7 @@ MonoBehaviour:
   m_Script: {fileID: 1067055268}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3353,7 +3365,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 1499729391851019324, guid: 78c7542155335ba418d73f2e912e01d9, type: 3}
+  m_Sprite: {fileID: -4945563654804910132, guid: 36be18dbbf80afd479660093bac5316e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -3613,7 +3625,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Level 1 Complete
+  m_Text: Level 2 Complete
 --- !u!222 &1755641874
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4038,7 +4050,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Continue to Level 2
+  m_Text: Return to Main Menu
 --- !u!222 &2005157869
 CanvasRenderer:
   m_ObjectHideFlags: 0

@@ -84,6 +84,9 @@ public sealed class MainMenuController : MonoBehaviour
             case "ROUTE_1":
                 SceneManager.LoadScene("Level1");
                 break;
+            case "ROUTE_2":
+                SceneManager.LoadScene("Level2");
+                break;
             default:
                 SetStatus("That route is reserved for a later passenger.");
                 break;
@@ -260,6 +263,7 @@ public sealed class MainMenuController : MonoBehaviour
             case "Level 1":
             case "Level 1  Office Worker":
                 return MainMenuButtonAction.ActionType.LaunchRoute1;
+            case "Level 2  Highway Focus":
             case "Route 2  Reserved":
                 return MainMenuButtonAction.ActionType.LaunchRoute2;
             case "Controls Placeholder":
@@ -444,7 +448,7 @@ public sealed class MainMenuController : MonoBehaviour
         Button futureRouteA = CreatePanelButton("Level 1  Office Worker", panel, MainMenuButtonAction.ActionType.LaunchRoute1);
         Stretch(futureRouteA.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -334f), new Vector2(-28f, -254f));
 
-        Button futureRouteB = CreatePanelButton("Route 2  Reserved", panel, MainMenuButtonAction.ActionType.LaunchRoute2);
+        Button futureRouteB = CreatePanelButton("Level 2  Highway Focus", panel, MainMenuButtonAction.ActionType.LaunchRoute2);
         Stretch(futureRouteB.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -426f), new Vector2(-28f, -346f));
 
         Button closeButton = CreatePanelButton("Close", panel, MainMenuButtonAction.ActionType.ClosePanels);

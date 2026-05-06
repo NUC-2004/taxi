@@ -6,6 +6,7 @@ public sealed class SceneMusicController : MonoBehaviour
     private const string SampleSceneName = "SampleScene";
     private const string Level0SceneName = "Level0";
     private const string Level1SceneName = "Level1";
+    private const string Level2SceneName = "Level2";
     private static readonly string[] MusicPlaylist =
     {
         "Audio/SampleSceneBgm",
@@ -146,6 +147,7 @@ public sealed class SceneMusicController : MonoBehaviour
                 return 0;
             case Level0SceneName:
             case Level1SceneName:
+            case Level2SceneName:
                 return 1;
             default:
                 return -1;

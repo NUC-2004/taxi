@@ -140,7 +140,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         else if (WasConfirmPressed() &&
                  selectedOptionIndex >= 0 &&
                  selectedOptionIndex < activeOptions.Count &&
-                 !DialogueSequenceManager.IsOptionLocked(activeOptions[selectedOptionIndex]))
+            !IsOptionLocked(activeOptions[selectedOptionIndex]))
         {
             dialogueManager.ChooseResponse(activeOptions[selectedOptionIndex]);
         }
@@ -831,13 +831,33 @@ public sealed class DialogueUILayer : MonoBehaviour
             case "Continue":
                 return PauseMenuButtonAction.ActionType.Resume;
             case "Return to Main Menu":
+            case "End Shift":
             case "回到主菜单":
                 return PauseMenuButtonAction.ActionType.ReturnToMainMenu;
+            case "Continue Game":
+            case "Retry":
             case "继续游戏":
                 return PauseMenuButtonAction.ActionType.ContinueGame;
             default:
                 return null;
         }
+    }
+
+    private static void SetPauseButtonAction(Button button, PauseMenuButtonAction.ActionType actionType)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        PauseMenuButtonAction action = button.GetComponent<PauseMenuButtonAction>();
+        if (action == null)
+        {
+            action = button.gameObject.AddComponent<PauseMenuButtonAction>();
+        }
+
+        action.SetAction(actionType);
+        action.Rebind();
     }
 
     private RectTransform FindRect(string path)
@@ -1041,7 +1061,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         string sceneName = SceneManager.GetActiveScene().name;
-        if (sceneName == "Level0" || sceneName == "Level1")
+        if (sceneName == "Level0" || sceneName == "Level1" || sceneName == "Level2")
         {
             ShowCompletionMenu();
         }
@@ -1103,7 +1123,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             int optionIndex = i;
             PlayerResponseOption option = options[i];
             Button button = CreateButton("Option " + (i + 1), optionsRoot, option.placeholderText);
-            button.interactable = !DialogueSequenceManager.IsOptionLocked(option);
+            button.interactable = !IsOptionLocked(option);
             RectTransform rect = button.GetComponent<RectTransform>();
             const float spacing = 0.025f;
             float buttonHeight = (1f - spacing * (options.Count - 1)) / options.Count;
@@ -1208,7 +1228,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             dialogueManager.CurrentPhase != DialoguePhase.PlayerResponse ||
             optionIndex < 0 ||
             optionIndex >= activeOptions.Count ||
-            DialogueSequenceManager.IsOptionLocked(activeOptions[optionIndex]))
+            IsOptionLocked(activeOptions[optionIndex]))
         {
             return;
         }
@@ -1235,7 +1255,7 @@ public sealed class DialogueUILayer : MonoBehaviour
             dialogueManager.CurrentPhase == DialoguePhase.PlayerResponse &&
             optionIndex >= 0 &&
             optionIndex < activeOptions.Count &&
-            !DialogueSequenceManager.IsOptionLocked(activeOptions[optionIndex]))
+            !IsOptionLocked(activeOptions[optionIndex]))
         {
             dialogueManager.ChooseResponse(activeOptions[optionIndex]);
         }
@@ -1328,7 +1348,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (desc != null)
         {
             desc.text = isFailureMenuActive
-                ? "Seems the passenger does not want to talk anymore."
+                ? GetFailureDescription()
                 : GetCompletionDescription();
         }
 
@@ -1336,12 +1356,14 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (continueLabel != null)
         {
             continueLabel.text = isFailureMenuActive ? "Retry" : GetContinueButtonLabel();
+            SetPauseButtonAction(continueLabel.GetComponentInParent<Button>(), PauseMenuButtonAction.ActionType.ContinueGame);
         }
 
         Text mainMenuLabel = FindText("Level0 Dialogue Canvas/Completion Overlay/Completion Panel/Completion Main Menu Button/Label");
         if (mainMenuLabel != null)
         {
             mainMenuLabel.text = isFailureMenuActive ? "End Shift" : "Return to Main Menu";
+            SetPauseButtonAction(mainMenuLabel.GetComponentInParent<Button>(), PauseMenuButtonAction.ActionType.ReturnToMainMenu);
         }
     }
 
@@ -1349,6 +1371,8 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         switch (SceneManager.GetActiveScene().name)
         {
+            case "Level2":
+                return "Level 2 Complete";
             case "Level1":
                 return "Level 1 Complete";
             case "Level0":
@@ -1361,8 +1385,10 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         switch (SceneManager.GetActiveScene().name)
         {
+            case "Level2":
+                return "Daniel is gone. The shift can return to the route table.";
             case "Level1":
-                return "Daniel is gone. You can replay this ride or head back to the main menu.";
+                return "Daniel is gone. The next route is ready.";
             case "Level0":
             default:
                 return "The first ride is over. Choose your next stop.";
@@ -1373,12 +1399,21 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         switch (SceneManager.GetActiveScene().name)
         {
+            case "Level2":
+                return "Return to Main Menu";
             case "Level1":
-                return "Replay Level 1";
+                return "Continue to Level 2";
             case "Level0":
             default:
                 return "Continue to Level 1";
         }
+    }
+
+    private string GetFailureDescription()
+    {
+        return dialogueManager != null && !string.IsNullOrWhiteSpace(dialogueManager.FailureMessage)
+            ? dialogueManager.FailureMessage
+            : "Seems the passenger does not want to talk anymore.";
     }
 
     private void TogglePauseMenu()
@@ -1431,7 +1466,10 @@ public sealed class DialogueUILayer : MonoBehaviour
                 SceneManager.LoadScene("Level1");
                 break;
             case "Level1":
-                SceneManager.LoadScene("Level1");
+                SceneManager.LoadScene("Level2");
+                break;
+            case "Level2":
+                SceneManager.LoadScene("SampleScene");
                 break;
             default:
                 SceneManager.LoadScene("SampleScene");
@@ -1485,7 +1523,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         for (int i = 0; i < optionButtons.Count; i++)
         {
-            bool isLocked = i < activeOptions.Count && DialogueSequenceManager.IsOptionLocked(activeOptions[i]);
+            bool isLocked = i < activeOptions.Count && IsOptionLocked(activeOptions[i]);
             Image image = optionButtons[i].GetComponent<Image>();
             if (image != null)
             {
@@ -1523,7 +1561,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
     }
 
-    private static int FindFirstSelectableOptionIndex(IReadOnlyList<PlayerResponseOption> options)
+    private int FindFirstSelectableOptionIndex(IReadOnlyList<PlayerResponseOption> options)
     {
         if (options == null)
         {
@@ -1532,7 +1570,7 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         for (int i = 0; i < options.Count; i++)
         {
-            if (!DialogueSequenceManager.IsOptionLocked(options[i]))
+            if (!IsOptionLocked(options[i]))
             {
                 return i;
             }
@@ -1562,7 +1600,7 @@ public sealed class DialogueUILayer : MonoBehaviour
                 index = 0;
             }
 
-            if (!DialogueSequenceManager.IsOptionLocked(activeOptions[index]))
+            if (!IsOptionLocked(activeOptions[index]))
             {
                 return index;
             }
@@ -1599,16 +1637,27 @@ public sealed class DialogueUILayer : MonoBehaviour
         return label;
     }
 
-    private static string GetOptionDisplayText(PlayerResponseOption option)
+    private bool IsOptionLocked(PlayerResponseOption option)
+    {
+        return dialogueManager != null
+            ? dialogueManager.IsOptionLockedForCurrentState(option)
+            : DialogueSequenceManager.IsOptionLocked(option);
+    }
+
+    private string GetOptionDisplayText(PlayerResponseOption option)
     {
         if (option == null)
         {
             return string.Empty;
         }
 
-        if (option.isKeywordOption || option.isUnlockedOption)
+        bool isSpecial = option.isKeywordOption || option.isUnlockedOption || option.requiredAffection > 0;
+        if (isSpecial)
         {
-            string suffix = DialogueSequenceManager.IsOptionLocked(option) ? " (locked)" : string.Empty;
+            string lockReason = dialogueManager != null
+                ? dialogueManager.GetOptionLockReason(option)
+                : DialogueSequenceManager.IsOptionLocked(option) ? "earlier choice required" : null;
+            string suffix = !string.IsNullOrWhiteSpace(lockReason) ? " (locked: " + lockReason + ")" : string.Empty;
             return option.placeholderText + suffix + " ★";
         }
 
@@ -2035,6 +2084,19 @@ public sealed class PauseMenuButtonAction : MonoBehaviour
             return;
         }
 
+        string label = GetLabelText();
+        if (label == "Retry")
+        {
+            uiLayer.ContinueGame();
+            return;
+        }
+
+        if (label == "End Shift" || label == "Return to Main Menu" || label == "回到主菜单")
+        {
+            uiLayer.ReturnToMainMenu();
+            return;
+        }
+
         switch (actionType)
         {
             case ActionType.Resume:
@@ -2047,5 +2109,11 @@ public sealed class PauseMenuButtonAction : MonoBehaviour
                 uiLayer.ContinueGame();
                 break;
         }
+    }
+
+    private string GetLabelText()
+    {
+        Text label = GetComponentInChildren<Text>(true);
+        return label != null ? label.text.Trim() : string.Empty;
     }
 }
