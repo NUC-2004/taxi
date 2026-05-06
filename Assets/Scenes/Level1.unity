@@ -535,6 +535,7 @@ MonoBehaviour:
   m_Script: {fileID: 1823612531}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200758
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -629,6 +630,7 @@ MonoBehaviour:
   m_Script: {fileID: 1752890726}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200762
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,6 +643,7 @@ MonoBehaviour:
   m_Script: {fileID: 1430806308}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200763
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -653,6 +656,7 @@ MonoBehaviour:
   m_Script: {fileID: 1873276361}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -665,6 +669,7 @@ MonoBehaviour:
   m_Script: {fileID: 1111375416}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -677,6 +682,7 @@ MonoBehaviour:
   m_Script: {fileID: 1067055268}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &231200766
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1772,6 +1778,7 @@ MonoBehaviour:
   m_Script: {fileID: 1823612531}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308193
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1866,6 +1873,7 @@ MonoBehaviour:
   m_Script: {fileID: 1752890726}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1878,6 +1886,7 @@ MonoBehaviour:
   m_Script: {fileID: 1430806308}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1890,6 +1899,7 @@ MonoBehaviour:
   m_Script: {fileID: 1873276361}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1902,6 +1912,7 @@ MonoBehaviour:
   m_Script: {fileID: 1111375416}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308200
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1914,6 +1925,7 @@ MonoBehaviour:
   m_Script: {fileID: 1067055268}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuButtonAction
+  actionType: 0
 --- !u!114 &665308201
 MonoBehaviour:
   m_ObjectHideFlags: 0

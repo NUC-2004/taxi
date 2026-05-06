@@ -1658,7 +1658,7 @@ public sealed class DialogueUILayer : MonoBehaviour
                 ? dialogueManager.GetOptionLockReason(option)
                 : DialogueSequenceManager.IsOptionLocked(option) ? "earlier choice required" : null;
             string suffix = !string.IsNullOrWhiteSpace(lockReason) ? " (locked: " + lockReason + ")" : string.Empty;
-            return option.placeholderText + suffix + " ★";
+            return option.placeholderText + suffix + " [!]";
         }
 
         return option.placeholderText;
