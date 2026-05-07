@@ -9,17 +9,19 @@ using UnityEngine.InputSystem;
 
 public sealed class DrivingMinigameController : MonoBehaviour
 {
+    private const string Level0SceneName = "Level0";
+    private const string Level1SceneName = "Level1";
     private const string Level2SceneName = "Level2";
     private const string FailureMessage = "(The ride breaks off before the conversation can continue.)";
     private const string PlayerCarResourcePath = "Level2UI/PlayerCarBlueUp";
     private const string ObstacleCarResourcePath = "Level2UI/ObstacleCarGreenUp";
     private const int CrashAffectionPenalty = -1;
-    private const float InitialObstacleSpeed = 180f;
-    private const float ObstacleSpeedIncreasePerStep = 20f;
-    private const float MaxObstacleSpeed = 320f;
-    private const float InitialSpawnInterval = 2.6f;
-    private const float SpawnIntervalDecreasePerStep = 0.1f;
-    private const float MinSpawnInterval = 1.7f;
+    private const float InitialObstacleSpeed = 120.6f;
+    private const float ObstacleSpeedIncreasePerStep = 13.4f;
+    private const float MaxObstacleSpeed = 214.4f;
+    private const float InitialSpawnInterval = 10.4f;
+    private const float SpawnIntervalDecreasePerStep = 0.4f;
+    private const float MinSpawnInterval = 6.8f;
     private const float DifficultyStepSeconds = 20f;
 
     private sealed class Obstacle
@@ -43,7 +45,7 @@ public sealed class DrivingMinigameController : MonoBehaviour
 
     private IEnumerator Start()
     {
-        if (!string.Equals(SceneManager.GetActiveScene().name, Level2SceneName, System.StringComparison.OrdinalIgnoreCase))
+        if (!IsDrivingMinigameScene(SceneManager.GetActiveScene().name))
         {
             Destroy(this);
             yield break;
@@ -75,7 +77,7 @@ public sealed class DrivingMinigameController : MonoBehaviour
 
         if (canvas == null)
         {
-            Debug.LogWarning("[DrivingMinigameController] Could not find a dialogue canvas for Level2.");
+            Debug.LogWarning("[DrivingMinigameController] Could not find a dialogue canvas for driving minigame.");
             yield break;
         }
 
@@ -334,6 +336,13 @@ public sealed class DrivingMinigameController : MonoBehaviour
 #else
         return Input.GetKeyDown(KeyCode.D);
 #endif
+    }
+
+    private static bool IsDrivingMinigameScene(string sceneName)
+    {
+        return string.Equals(sceneName, Level0SceneName, System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, Level1SceneName, System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, Level2SceneName, System.StringComparison.OrdinalIgnoreCase);
     }
 
     private static RectTransform CreatePanel(string objectName, Transform parent, Color color)

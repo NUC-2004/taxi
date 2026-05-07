@@ -71,7 +71,7 @@ public sealed class TutorialStepController : MonoBehaviour
 
         if (phase == DialoguePhase.NpcSpeaking && !hasSeenResponseWindow)
         {
-            uiLayer.SetTutorialText("NPC is speaking. Responses are locked until this block ends.");
+            uiLayer.SetTutorialText("NPC is speaking. Click the dialogue box to finish or advance each line.");
         }
         else if (phase == DialoguePhase.PlayerResponse)
         {

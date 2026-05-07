@@ -122,7 +122,12 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         SyncResponsePanelVisibility();
-        TryHandleMusicNextButtonClick();
+        if (TryHandleMusicNextButtonClick())
+        {
+            return;
+        }
+
+        TryHandleDialogueAdvanceClick();
 
         if (dialogueManager == null || dialogueManager.CurrentPhase != DialoguePhase.PlayerResponse || optionButtons.Count == 0)
         {
@@ -742,21 +747,41 @@ public sealed class DialogueUILayer : MonoBehaviour
         SceneMusicController.PlayNextTrack();
     }
 
-    private void TryHandleMusicNextButtonClick()
+    private bool TryHandleMusicNextButtonClick()
     {
         if (musicNextButtonRoot == null || !WasPointerPressedThisFrame())
         {
-            return;
+            return false;
         }
 
         Vector2 pointerPosition = GetPointerScreenPosition();
         if (!RectTransformUtility.RectangleContainsScreenPoint(musicNextButtonRoot, pointerPosition, null))
         {
-            return;
+            return false;
         }
 
         Debug.Log("[DialogueUILayer] Music next button click detected by fallback hit test.");
         HandleMusicNextButtonClicked();
+        return true;
+    }
+
+    private void TryHandleDialogueAdvanceClick()
+    {
+        if (dialogueManager == null ||
+            dialogueManager.CurrentPhase != DialoguePhase.NpcSpeaking ||
+            dialoguePanelRoot == null ||
+            !WasPointerPressedThisFrame())
+        {
+            return;
+        }
+
+        Vector2 pointerPosition = GetPointerScreenPosition();
+        if (!RectTransformUtility.RectangleContainsScreenPoint(dialoguePanelRoot, pointerPosition, null))
+        {
+            return;
+        }
+
+        dialogueManager.RequestNpcAdvance();
     }
 
     private void RefreshMusicNextButtonDebugVisual()

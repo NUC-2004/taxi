@@ -31,6 +31,10 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     private NpcSpeakingBlock activeBlock;
     private string loadedSequenceId = "Level0";
     private bool sequenceFailed;
+    private bool waitingForNpcAdvance;
+    private bool npcAdvanceRequested;
+    private bool typewriterSkipRequested;
+    private bool isTypewriterPlaying;
 
     public event Action<DialoguePhase> PhaseChanged;
     public event Action<NpcSpeakingBlock, int, int> BlockChanged;
@@ -76,12 +80,13 @@ public sealed class DialogueSequenceManager : MonoBehaviour
 
         activeBlock = null;
         sequenceFailed = false;
+        ResetNpcAdvanceState();
         FailureMessage = ConversationFailureMessage;
         CurrentResponseDurationSeconds = 0f;
         affection = Mathf.Clamp(initialAffection, minAffection, maxAffection);
         AffectionChanged?.Invoke(affection, minAffection, maxAffection);
         BuildBlockLookup();
-        EnsureLevel2DrivingMinigame();
+        EnsureDrivingMinigame();
         sequenceRoutine = StartCoroutine(RunSequence());
     }
 
@@ -109,6 +114,25 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         }
 
         ApplyAffectionDelta(delta, failureMessage);
+    }
+
+    public void RequestNpcAdvance()
+    {
+        if (CurrentPhase != DialoguePhase.NpcSpeaking || sequenceFailed)
+        {
+            return;
+        }
+
+        if (isTypewriterPlaying)
+        {
+            typewriterSkipRequested = true;
+            return;
+        }
+
+        if (waitingForNpcAdvance)
+        {
+            npcAdvanceRequested = true;
+        }
     }
 
     public void ChooseResponse(PlayerResponseOption option)
@@ -191,34 +215,58 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         if (fragments == null || fragments.Length == 0)
         {
             NpcTextChanged?.Invoke(string.Empty);
-            yield return new WaitForSeconds(secondsPerNpcFragment + extraNpcFragmentHoldSeconds);
             yield break;
         }
 
         for (int i = 0; i < fragments.Length; i++)
         {
             yield return PlayTypewriterFragment(fragments[i]);
-            yield return new WaitForSeconds(secondsPerNpcFragment + extraNpcFragmentHoldSeconds);
+            yield return WaitForNpcAdvance();
         }
     }
 
     private IEnumerator PlayTypewriterFragment(string fragment)
     {
+        typewriterSkipRequested = false;
         if (string.IsNullOrEmpty(fragment))
         {
             NpcTextChanged?.Invoke(string.Empty);
             yield break;
         }
 
+        isTypewriterPlaying = true;
         for (int i = 1; i <= fragment.Length; i++)
         {
             NpcTextChanged?.Invoke(fragment.Substring(0, i));
+
+            if (typewriterSkipRequested)
+            {
+                NpcTextChanged?.Invoke(fragment);
+                break;
+            }
 
             if (i < fragment.Length)
             {
                 yield return new WaitForSeconds(typewriterCharacterInterval);
             }
         }
+
+        isTypewriterPlaying = false;
+        typewriterSkipRequested = false;
+    }
+
+    private IEnumerator WaitForNpcAdvance()
+    {
+        waitingForNpcAdvance = true;
+        npcAdvanceRequested = false;
+
+        while (!npcAdvanceRequested && !sequenceFailed && CurrentPhase == DialoguePhase.NpcSpeaking)
+        {
+            yield return null;
+        }
+
+        waitingForNpcAdvance = false;
+        npcAdvanceRequested = false;
     }
 
     private IEnumerator RunResponseWindow(NpcSpeakingBlock block)
@@ -328,6 +376,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     {
         sequenceFailed = true;
         waitingForResponse = false;
+        ResetNpcAdvanceState();
         pendingNextBlockId = null;
         CurrentResponseDurationSeconds = 0f;
         FailureMessage = string.IsNullOrWhiteSpace(message) ? ConversationFailureMessage : message;
@@ -339,13 +388,14 @@ public sealed class DialogueSequenceManager : MonoBehaviour
 
     private bool IsFailureEnabledSequence()
     {
-        return string.Equals(loadedSequenceId, "Level1", StringComparison.OrdinalIgnoreCase) ||
+        return string.Equals(loadedSequenceId, "Level0", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(loadedSequenceId, "Level1", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(loadedSequenceId, "Level2", StringComparison.OrdinalIgnoreCase);
     }
 
-    private void EnsureLevel2DrivingMinigame()
+    private void EnsureDrivingMinigame()
     {
-        if (!string.Equals(SceneManager.GetActiveScene().name, "Level2", StringComparison.OrdinalIgnoreCase) ||
+        if (!IsDrivingMinigameScene(SceneManager.GetActiveScene().name) ||
             GetComponent<DrivingMinigameController>() != null)
         {
             return;
@@ -354,10 +404,25 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         gameObject.AddComponent<DrivingMinigameController>();
     }
 
+    private static bool IsDrivingMinigameScene(string sceneName)
+    {
+        return string.Equals(sceneName, "Level0", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, "Level1", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, "Level2", StringComparison.OrdinalIgnoreCase);
+    }
+
     private void SetPhase(DialoguePhase phase)
     {
         CurrentPhase = phase;
         PhaseChanged?.Invoke(phase);
+    }
+
+    private void ResetNpcAdvanceState()
+    {
+        waitingForNpcAdvance = false;
+        npcAdvanceRequested = false;
+        typewriterSkipRequested = false;
+        isTypewriterPlaying = false;
     }
 
     private void BuildBlockLookup()
