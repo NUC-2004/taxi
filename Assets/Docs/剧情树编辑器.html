@@ -7,94 +7,58 @@
     <style>
         :root {
             color-scheme: dark;
-            --bg: #111317;
-            --panel: #1a1d23;
-            --panel-2: #22262e;
-            --border: #3a414c;
-            --text: #ede7dc;
-            --muted: #afa99f;
-            --accent: #d2a15f;
-            --accent-2: #f0c57a;
-            --danger: #b76f6f;
-            --line: #4c5563;
+            --bg: #0f1115;
+            --panel: #171a21;
+            --panel-2: #1f2430;
+            --panel-3: #262c39;
+            --border: #3d4658;
+            --text: #edf1f7;
+            --muted: #aab4c3;
+            --accent: #6fc2ff;
+            --accent-2: #9fe0ff;
+            --warm: #f5b971;
+            --danger: #f08d8d;
+            --ok: #80d7ae;
+            --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
         }
 
         * {
             box-sizing: border-box;
         }
 
+        html,
         body {
             margin: 0;
+            min-height: 100%;
             font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", sans-serif;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at top left, rgba(111, 194, 255, 0.18), transparent 26%),
+                radial-gradient(circle at top right, rgba(245, 185, 113, 0.12), transparent 22%),
+                linear-gradient(180deg, #0d1015 0%, #11151c 100%);
             color: var(--text);
         }
 
-        .page {
-            display: grid;
-            grid-template-columns: minmax(340px, 1.15fr) minmax(340px, 0.85fr);
-            min-height: 100vh;
-        }
-
-        .panel {
-            padding: 20px;
-        }
-
-        .left {
-            border-right: 1px solid var(--border);
-            background: linear-gradient(180deg, #13161a 0%, #171b20 100%);
-        }
-
-        .right {
-            background: #15181d;
-        }
-
-        .eyebrow {
-            color: var(--accent);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 10px;
-        }
-
-        h1, h2, h3, p {
-            margin: 0;
-        }
-
-        .title {
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
-
-        .subtitle {
-            color: var(--muted);
-            line-height: 1.6;
-            margin-bottom: 18px;
-        }
-
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        button, input, textarea {
+        button,
+        input,
+        textarea,
+        select {
             font: inherit;
         }
 
         button {
             appearance: none;
             border: 1px solid var(--border);
-            border-radius: 6px;
             background: var(--panel-2);
             color: var(--text);
+            border-radius: 10px;
             padding: 10px 14px;
             cursor: pointer;
+            transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
         }
 
         button:hover {
             border-color: var(--accent);
+            transform: translateY(-1px);
         }
 
         button.secondary {
@@ -102,205 +66,367 @@
         }
 
         button.danger {
-            border-color: #6f4545;
-            color: #f0c3c3;
+            color: #ffd3d3;
+            border-color: #7c4a4a;
+            background: rgba(124, 74, 74, 0.18);
+        }
+
+        button.small {
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .page {
+            display: grid;
+            grid-template-columns: minmax(720px, 1.55fr) minmax(420px, 0.95fr);
+            min-height: 100vh;
+        }
+
+        .panel {
+            padding: 22px;
+        }
+
+        .left {
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .eyebrow {
+            color: var(--accent);
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin: 0;
+        }
+
+        .title {
+            font-size: 30px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            line-height: 1.7;
+            margin-bottom: 18px;
+            max-width: 920px;
+        }
+
+        .toolbar,
+        .toolbar-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .toolbar-wrap {
+            margin-bottom: 16px;
         }
 
         .card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 14px;
+            background: rgba(20, 24, 32, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            box-shadow: var(--shadow);
+            padding: 18px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
         }
 
         .section-title {
             color: var(--muted);
-            font-size: 13px;
-            margin-bottom: 12px;
+            font-size: 12px;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            margin-bottom: 12px;
         }
 
-        .tree-wrap {
-            max-height: calc(100vh - 180px);
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .metric {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .metric .label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .metric .value {
+            font-size: 24px;
+            color: var(--accent-2);
+        }
+
+        .graph-shell {
             overflow: auto;
-            padding: 4px 4px 24px;
+            max-height: calc(100vh - 280px);
+            border-radius: 16px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0)),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: auto, 28px 28px, 28px 28px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 18px;
         }
 
-        .tree-root {
-            list-style: none;
-            margin: 0;
-            padding: 0 0 0 8px;
-        }
-
-        .tree-root ul {
-            list-style: none;
-            margin: 0;
-            padding-left: 28px;
+        .graph-stage {
             position: relative;
+            min-height: 560px;
+            min-width: 880px;
         }
 
-        .tree-root ul::before {
-            content: "";
+        #graphEdges {
             position: absolute;
-            left: 11px;
-            top: 0;
-            bottom: 8px;
-            width: 1px;
-            background: var(--line);
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
         }
 
-        .tree-root li {
-            position: relative;
-            margin: 10px 0 0;
+        .edge-path {
+            fill: none;
+            stroke-width: 2;
+            opacity: 0.95;
         }
 
-        .tree-root li::before {
-            content: "";
+        .edge-next {
+            stroke: var(--accent);
+        }
+
+        .edge-option {
+            stroke: var(--warm);
+        }
+
+        .edge-miss {
+            stroke: var(--danger);
+            stroke-dasharray: 7 5;
+        }
+
+        .edge-label {
+            font-size: 12px;
+            fill: #d8e4f6;
+            paint-order: stroke;
+            stroke: rgba(15, 17, 21, 0.78);
+            stroke-width: 6px;
+            stroke-linejoin: round;
+        }
+
+        .graph-node {
             position: absolute;
-            left: -17px;
-            top: 20px;
-            width: 17px;
-            height: 1px;
-            background: var(--line);
-        }
-
-        .tree-root > li::before {
-            display: none;
-        }
-
-        .node {
-            border: 1px solid var(--border);
-            background: #22262d;
-            border-radius: 8px;
-            padding: 12px;
+            width: 260px;
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(32, 38, 50, 0.96), rgba(23, 27, 36, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
             cursor: pointer;
-            min-width: 220px;
-            max-width: 360px;
+            transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
         }
 
-        .node.selected {
+        .graph-node:hover {
+            transform: translateY(-2px);
+            border-color: rgba(159, 224, 255, 0.55);
+        }
+
+        .graph-node.selected {
             border-color: var(--accent);
-            box-shadow: 0 0 0 1px rgba(210, 161, 95, 0.35);
-        }
-
-        .node-title {
-            font-size: 15px;
-            margin-bottom: 6px;
+            box-shadow: 0 0 0 1px rgba(111, 194, 255, 0.45), 0 18px 42px rgba(0, 0, 0, 0.38);
         }
 
         .node-id {
             color: var(--accent-2);
             font-size: 12px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            word-break: break-all;
         }
 
-        .node-meta,
-        .branch-meta {
+        .node-title {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .node-preview {
             color: var(--muted);
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 13px;
+            line-height: 1.55;
+            margin-bottom: 12px;
+            white-space: pre-line;
         }
 
-        .branch-tag {
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .badge {
             display: inline-flex;
             align-items: center;
-            border: 1px solid var(--border);
-            background: #2b3038;
+            gap: 6px;
             border-radius: 999px;
-            padding: 4px 10px;
+            padding: 5px 10px;
             font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
             color: var(--muted);
-            margin: 0 0 8px 0;
+        }
+
+        .badge.option {
+            color: #f8d39a;
+        }
+
+        .badge.next {
+            color: #a6ddff;
+        }
+
+        .badge.miss {
+            color: #ffb7b7;
+        }
+
+        .graph-empty {
+            color: var(--muted);
+            line-height: 1.7;
+            padding: 18px 6px;
         }
 
         label {
             display: block;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
 
         .label-title {
             display: block;
-            font-size: 13px;
             color: var(--muted);
-            margin-bottom: 6px;
+            font-size: 13px;
+            margin-bottom: 7px;
         }
 
         input[type="text"],
-        textarea {
+        textarea,
+        select {
             width: 100%;
-            border: 1px solid var(--border);
-            background: #23272f;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
             color: var(--text);
-            border-radius: 6px;
-            padding: 10px 12px;
+            padding: 11px 12px;
             outline: none;
         }
 
         textarea {
-            min-height: 92px;
+            min-height: 110px;
             resize: vertical;
-            line-height: 1.55;
+            line-height: 1.6;
         }
 
         input[type="text"]:focus,
-        textarea:focus {
-            border-color: var(--accent);
+        textarea:focus,
+        select:focus {
+            border-color: rgba(111, 194, 255, 0.75);
         }
 
-        .branch-list {
+        .options-list {
             display: grid;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .branch-item {
-            border: 1px solid var(--border);
-            border-radius: 8px;
+        .option-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
             padding: 12px;
-            background: #20242b;
         }
 
-        .row {
+        .option-head {
             display: flex;
+            align-items: center;
+            justify-content: space-between;
             gap: 10px;
-            flex-wrap: wrap;
+            margin-bottom: 10px;
         }
 
-        .row > * {
-            flex: 1 1 160px;
-        }
-
-        .hint {
-            color: var(--muted);
-            line-height: 1.6;
+        .option-title {
+            color: var(--warm);
             font-size: 13px;
         }
 
-        .empty {
-            color: var(--muted);
-            padding: 8px 0;
-        }
-
-        .footer-tools {
-            display: flex;
-            flex-wrap: wrap;
+        .inline-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
-            margin-top: 12px;
         }
 
-        @media (max-width: 980px) {
+        .empty-state,
+        .hint {
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .source-area {
+            min-height: 240px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 6px 10px;
+            background: rgba(111, 194, 255, 0.08);
+            color: var(--accent-2);
+            font-size: 12px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .footer-note {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        @media (max-width: 1320px) {
             .page {
                 grid-template-columns: 1fr;
             }
 
             .left {
                 border-right: 0;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             }
 
-            .tree-wrap {
+            .graph-shell {
                 max-height: none;
+            }
+        }
+
+        @media (max-width: 860px) {
+            .summary,
+            .inline-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel {
+                padding: 16px;
+            }
+
+            .graph-stage {
+                min-width: 760px;
             }
         }
     </style>
@@ -308,30 +434,54 @@
 <body>
     <div class="page">
         <section class="panel left">
-            <div class="eyebrow">Story Tool</div>
+            <div class="eyebrow">Dialogue Flow Site</div>
             <h1 class="title">剧情树编辑器</h1>
             <p class="subtitle">
-                这是一个空白结构工具，用来搭关卡分支，不预填剧本文案。<br>
-                你可以新增节点、增加分支、改分支名、导出 JSON，后面再慢慢填文本。
+                把现有对白文本直接变成可视化分支网站。左边是“选项会导向哪个回答”的节点图，右边能随时改台词、选项、跳转目标；修改会自动保存在当前浏览器，本页也能重新导出成 Markdown 或 JSON。
             </p>
 
-            <div class="toolbar">
-                <button id="newTreeButton">新建剧情树</button>
-                <button id="addChildButton">新增子分支</button>
-                <button id="addSiblingButton">新增同级</button>
-                <button id="deleteNodeButton" class="danger">删除当前节点</button>
-            </div>
-
-            <div class="toolbar">
-                <button id="exportButton" class="secondary">导出 JSON</button>
-                <button id="importButton" class="secondary">导入 JSON</button>
-                <button id="copyJsonButton" class="secondary">复制 JSON</button>
+            <div class="toolbar-wrap">
+                <div class="toolbar">
+                    <button id="resetSeedButton">恢复内置 Level0 文本</button>
+                    <button id="exportMarkdownButton" class="secondary">导出 Markdown</button>
+                    <button id="copyMarkdownButton" class="secondary">复制 Markdown</button>
+                    <button id="exportJsonButton" class="secondary">导出 JSON</button>
+                </div>
+                <div class="toolbar">
+                    <button id="addBlockButton" class="secondary">新增空白节点</button>
+                    <button id="addOptionButton" class="secondary">给当前节点加选项</button>
+                    <button id="deleteBlockButton" class="danger">删除当前节点</button>
+                </div>
             </div>
 
             <div class="card">
-                <div class="section-title">剧情树</div>
-                <div class="tree-wrap">
-                    <div id="treeContainer"></div>
+                <div class="section-title">全局概览</div>
+                <div class="summary">
+                    <div class="metric">
+                        <div class="label">节点数</div>
+                        <div class="value" id="metricBlocks">0</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">玩家选项</div>
+                        <div class="value" id="metricOptions">0</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">未回应分支</div>
+                        <div class="value" id="metricNoResponse">0</div>
+                    </div>
+                    <div class="metric">
+                        <div class="label">终点节点</div>
+                        <div class="value" id="metricLeafs">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">分支总览</div>
+                <div class="graph-shell">
+                    <div id="graphStage" class="graph-stage">
+                        <svg id="graphEdges"></svg>
+                    </div>
                 </div>
             </div>
         </section>
@@ -339,438 +489,1756 @@
         <aside class="panel right">
             <div class="card">
                 <div class="section-title">当前节点</div>
-                <div id="emptyState" class="hint">
-                    先在左边选中一个节点。<br>
-                    建议从根节点开始，一点点往下加。
+                <div id="selectionHint" class="empty-state">
+                    先点左边任意节点，就能在这里直接改它的台词、默认流向、未回应分支和所有玩家选项。
                 </div>
-                <div id="editor" style="display:none;">
+                <div id="editorPanel" style="display:none;">
                     <label>
-                        <span class="label-title">节点 ID</span>
-                        <input id="nodeIdInput" type="text" placeholder="例如：L0_OPEN">
+                        <span class="label-title">Block ID</span>
+                        <input id="blockIdInput" type="text" placeholder="例如：L0_OPEN">
                     </label>
 
                     <label>
                         <span class="label-title">节点标题</span>
-                        <input id="nodeTitleInput" type="text" placeholder="例如：开场 / 第一次试探 / 车站前">
+                        <input id="blockTitleInput" type="text" placeholder="不填就自动用首句作为标题">
                     </label>
 
                     <label>
-                        <span class="label-title">节点备注</span>
-                        <textarea id="nodeNotesInput" placeholder="这里先写结构备注、情绪方向、信息点。剧本文案可以后面再补。"></textarea>
+                        <span class="label-title">NPC 文本（每行一条）</span>
+                        <textarea id="npcLinesInput" placeholder="每一行都会当成一条 NPC 台词"></textarea>
+                    </label>
+
+                    <div class="inline-grid">
+                        <label>
+                            <span class="label-title">默认 Next Block</span>
+                            <input id="nextBlockInput" type="text" placeholder="例如：L0_FIRST_RESPONSE 或 END">
+                        </label>
+
+                        <label>
+                            <span class="label-title">未回应 Affection</span>
+                            <input id="noResponseAffectionInput" type="text" placeholder="-1">
+                        </label>
+                    </div>
+
+                    <label>
+                        <span class="label-title">未回应 Next Block</span>
+                        <input id="noResponseNextInput" type="text" placeholder="例如：L0_OPEN_MISS">
                     </label>
                 </div>
             </div>
 
             <div class="card">
-                <div class="section-title">分支列表</div>
-                <div id="branchesEditor" class="branch-list"></div>
-                <div class="footer-tools">
-                    <button id="appendBranchButton">给当前节点加一条分支</button>
+                <div class="section-title">选项编辑</div>
+                <div id="optionsList" class="options-list"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">源文本</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    这里放整份原始对白 Markdown。你可以直接粘贴新文本，再点“按源文本重建剧情树”。
+                </p>
+                <textarea id="sourceInput" class="source-area"></textarea>
+                <div class="toolbar" style="margin-top:12px;">
+                    <button id="applySourceButton">按源文本重建剧情树</button>
+                    <button id="copySourceButton" class="secondary">复制当前源文本</button>
                 </div>
             </div>
 
             <div class="card">
-                <div class="section-title">使用建议</div>
-                <div class="hint">
-                    1. 一个节点代表一段剧情状态，不一定是一整段对白。<br>
-                    2. 分支名建议先写成“态度 / 结果 / 条件”，例如：沉默、追问、缓和。<br>
-                    3. 先搭树，再填文本，会轻松很多。<br>
-                    4. 页面会自动保存到浏览器本地。
-                </div>
+                <div class="section-title">说明</div>
+                <div id="overviewTags"></div>
+                <p class="footer-note">
+                    1. 本页是单文件 HTML，双击就能开。<br>
+                    2. 编辑后会自动保存到浏览器 `localStorage`。<br>
+                    3. 如果你改了 Block ID，页面会自动同步所有指向它的跳转。<br>
+                    4. 删除节点时，所有指向它的分支会一起清空，避免假链接残留。
+                </p>
             </div>
         </aside>
     </div>
 
+    <script id="seedMarkdown" type="text/plain"># Level 0 Script
+
+Current in-game copy for `Level0`, organized by block and branch.
+
+## Overview
+
+- Scene role: first real ride, disguised as tutorial
+- NPC: unnamed in script here, but this is the key Level 0 passenger
+- Tone target: indirect, restrained, late-night urban intimacy
+- Player choice timing: short-window response, so option text stays compact
+
+---
+
+## Block `L0_OPEN`
+
+**NPC**
+
+1. Are you still taking fares?
+2. Good.
+3. Give me a second before I tell you where.
+4. When I stop, say something.
+5. Keys, space, mouse. Whatever's faster.
+
+**Next Block**
+
+- `L0_FIRST_RESPONSE`
+
+---
+
+## Block `L0_FIRST_RESPONSE`
+
+**NPC**
+
+1. That's better.
+2. I hate feeling like I'm talking to the seat in front of me.
+
+**Player Options**
+
+- `L0_OPEN_WARM`  
+  Text: `I'm here.`  
+  Affection: `+2`  
+  Next: `L0_OPEN_WARM_REPLY`
+
+- `L0_OPEN_WRY`  
+  Text: `We'll see.`  
+  Affection: `+1`  
+  Next: `L0_OPEN_WRY_REPLY`
+
+- `L0_OPEN_FLAT`  
+  Text: `Destination?`  
+  Affection: `0`  
+  Next: `L0_OPEN_FLAT_REPLY`
+
+- `L0_OPEN_GUARD`  
+  Text: `You're odd.`  
+  Affection: `-1`  
+  Next: `L0_OPEN_GUARD_REPLY`
+
+**No Response**
+
+- Affection: `-1`
+- Next: `L0_OPEN_MISS`
+
+---
+
+## Block `L0_OPEN_WARM_REPLY`
+
+**NPC**
+
+1. Mm.
+2. You say that like it's simple.
+
+**Next Block**
+
+- `L0_DEST_SETUP`
+
+---
+
+## Block `L0_OPEN_WRY_REPLY`
+
+**NPC**
+
+1. Fair enough.
+2. I've probably earned that.
+
+**Next Block**
+
+- `L0_DEST_SETUP`
+
+---
+
+## Block `L0_OPEN_FLAT_REPLY`
+
+**NPC**
+
+1. Right.
+2. Keep it practical.
+
+**Next Block**
+
+- `L0_DEST_SETUP`
+
+---
+
+## Block `L0_OPEN_GUARD_REPLY`
+
+**NPC**
+
+1. A little, yeah.
+2. Long night.
+
+**Next Block**
+
+- `L0_DEST_SETUP`
+
+---
+
+## Block `L0_OPEN_MISS`
+
+**NPC**
+
+1. Okay.
+2. Quiet works too.
+
+**Next Block**
+
+- `L0_DEST_SETUP`
+
+---
+
+## Block `L0_DEST_SETUP`
+
+**NPC**
+
+1. I said Crescent Hotel.
+2. Then I kept walking.
+3. Now I'm doing the same thing in your cab.
+
+**Next Block**
+
+- `L0_DEST_RESPONSE`
+
+---
+
+## Block `L0_DEST_RESPONSE`
+
+**NPC**
+
+1. Well?
+
+**Player Options**
+
+- `L0_DEST_ASK`  
+  Text: `Then where?`  
+  Affection: `+1`  
+  Next: `L0_DEST_ASK_REPLY`
+
+- `L0_DEST_SOFT`  
+  Text: `Take your time.`  
+  Affection: `+2`  
+  Next: `L0_DEST_SOFT_REPLY`
+
+- `L0_DEST_SHARP`  
+  Text: `You're stalling.`  
+  Affection: `-1`  
+  Next: `L0_DEST_SHARP_REPLY`
+
+- `L0_DEST_CURIOUS`  
+  Text: `Who was there?`  
+  Affection: `+1`  
+  Next: `L0_DEST_CURIOUS_REPLY`
+
+**No Response**
+
+- Affection: `-1`
+- Next: `L0_DEST_MISS`
+
+---
+
+## Block `L0_DEST_ASK_REPLY`
+
+**NPC**
+
+1. If I knew, I'd have said it already.
+2. That's the whole problem.
+
+**Next Block**
+
+- `L0_NIGHT_CONTEXT`
+
+---
+
+## Block `L0_DEST_SOFT_REPLY`
+
+**NPC**
+
+1. That's nice of you.
+2. Also kind of dangerous.
+
+**Next Block**
+
+- `L0_NIGHT_CONTEXT`
+
+---
+
+## Block `L0_DEST_SHARP_REPLY`
+
+**NPC**
+
+1. Maybe I am.
+2. Still not the worst idea I've had tonight.
+
+**Next Block**
+
+- `L0_NIGHT_CONTEXT`
+
+---
+
+## Block `L0_DEST_CURIOUS_REPLY`
+
+**NPC**
+
+1. Too many people.
+2. Too much polished glass.
+
+**Next Block**
+
+- `L0_NIGHT_CONTEXT`
+
+---
+
+## Block `L0_DEST_MISS`
+
+**NPC**
+
+1. You leave people room.
+2. I can't tell if that's kind or lazy.
+
+**Next Block**
+
+- `L0_NIGHT_CONTEXT`
+
+---
+
+## Block `L0_NIGHT_CONTEXT`
+
+**NPC**
+
+1. It was one of those rooms where everybody looks expensive and nobody says what they mean.
+2. Soft voices. Bright glass. Too much perfume.
+3. You know the kind.
+
+**Next Block**
+
+- `L0_NIGHT_RESPONSE`
+
+---
+
+## Block `L0_NIGHT_RESPONSE`
+
+**NPC**
+
+1. What would you have said?
+
+**Player Options**
+
+- `L0_NIGHT_LEAVE`  
+  Text: `Leave early.`  
+  Affection: `+1`  
+  Next: `L0_NIGHT_LEAVE_REPLY`
+
+- `L0_NIGHT_ENDURE`  
+  Text: `Smile, then go.`  
+  Affection: `0`  
+  Next: `L0_NIGHT_ENDURE_REPLY`
+
+- `L0_NIGHT_REFUSE`  
+  Text: `Say no.`  
+  Affection: `+2`  
+  Next: `L0_NIGHT_REFUSE_REPLY`
+
+- `L0_NIGHT_DEFLECT`  
+  Text: `Depends on them.`  
+  Affection: `+1`  
+  Next: `L0_NIGHT_DEFLECT_REPLY`
+
+**No Response**
+
+- Affection: `-1`
+- Next: `L0_NIGHT_MISS`
+
+---
+
+## Block `L0_NIGHT_LEAVE_REPLY`
+
+**NPC**
+
+1. Yeah.
+2. I almost did. A few times.
+
+**Next Block**
+
+- `L0_ROUTE_SETUP`
+
+---
+
+## Block `L0_NIGHT_ENDURE_REPLY`
+
+**NPC**
+
+1. That sounds like experience.
+2. Not in a flattering way.
+
+**Next Block**
+
+- `L0_ROUTE_SETUP`
+
+---
+
+## Block `L0_NIGHT_REFUSE_REPLY`
+
+**NPC**
+
+1. Mm.
+2. Easy word. Bad timing.
+
+**Next Block**
+
+- `L0_ROUTE_SETUP`
+
+---
+
+## Block `L0_NIGHT_DEFLECT_REPLY`
+
+**NPC**
+
+1. That's the annoying part.
+2. They weren't being dramatic about it.
+
+**Next Block**
+
+- `L0_ROUTE_SETUP`
+
+---
+
+## Block `L0_NIGHT_MISS`
+
+**NPC**
+
+1. No answer.
+2. Maybe that's an answer too.
+
+**Next Block**
+
+- `L0_ROUTE_SETUP`
+
+---
+
+## Block `L0_ROUTE_SETUP`
+
+**NPC**
+
+1. Take the river road.
+2. Not the tunnel.
+3. I don't want to feel boxed in yet.
+
+**Next Block**
+
+- `L0_ROUTE_RESPONSE`
+
+---
+
+## Block `L0_ROUTE_RESPONSE`
+
+**NPC**
+
+1. Would you?
+
+**Player Options**
+
+- `L0_ROUTE_BRIGHT`  
+  Text: `Too bright.`  
+  Affection: `0`  
+  Next: `L0_ROUTE_BRIGHT_REPLY`
+
+- `L0_ROUTE_RIVER`  
+  Text: `River road.`  
+  Affection: `+2`  
+  Next: `L0_ROUTE_RIVER_REPLY`
+
+- `L0_ROUTE_TUNNEL`  
+  Text: `Take the tunnel.`  
+  Affection: `-1`  
+  Next: `L0_ROUTE_TUNNEL_REPLY`
+
+- `L0_ROUTE_ASKWHY`  
+  Text: `Why not?`  
+  Affection: `+1`  
+  Next: `L0_ROUTE_ASKWHY_REPLY`
+
+**No Response**
+
+- Affection: `-1`
+- Next: `L0_ROUTE_MISS`
+
+---
+
+## Block `L0_ROUTE_BRIGHT_REPLY`
+
+**NPC**
+
+1. Exactly.
+2. Some roads feel like they're watching you.
+
+**Next Block**
+
+- `L0_NAME_SETUP`
+
+---
+
+## Block `L0_ROUTE_RIVER_REPLY`
+
+**NPC**
+
+1. Right.
+2. A few extra minutes can feel very generous.
+
+**Next Block**
+
+- `L0_NAME_SETUP`
+
+---
+
+## Block `L0_ROUTE_TUNNEL_REPLY`
+
+**NPC**
+
+1. You sound like my mother.
+2. Which isn't a compliment, sorry.
+
+**Next Block**
+
+- `L0_NAME_SETUP`
+
+---
+
+## Block `L0_ROUTE_ASKWHY_REPLY`
+
+**NPC**
+
+1. Because once you're in, that's it.
+2. No windows. No turns. Just forward.
+
+**Next Block**
+
+- `L0_NAME_SETUP`
+
+---
+
+## Block `L0_ROUTE_MISS`
+
+**NPC**
+
+1. You let me choose.
+2. Most people like to feel useful sooner than that.
+
+**Next Block**
+
+- `L0_NAME_SETUP`
+
+---
+
+## Block `L0_NAME_SETUP`
+
+**NPC**
+
+1. His name is Daichi.
+2. That probably tells you enough.
+3. Or maybe it tells you nothing.
+
+**Next Block**
+
+- `L0_NAME_RESPONSE`
+
+---
+
+## Block `L0_NAME_RESPONSE`
+
+**NPC**
+
+1. Choose one.
+
+**Player Options**
+
+- `L0_NAME_MARRY`  
+  Text: `Marry him.`  
+  Affection: `-1`  
+  Next: `L0_NAME_MARRY_REPLY`
+
+- `L0_NAME_APOLOGIZE`  
+  Text: `Apologize.`  
+  Affection: `0`  
+  Next: `L0_NAME_APOLOGIZE_REPLY`
+
+- `L0_NAME_THANK`  
+  Text: `Thank him.`  
+  Affection: `0`  
+  Next: `L0_NAME_THANK_REPLY`
+
+- `L0_NAME_NONE`  
+  Text: `None fit.`  
+  Affection: `+2`  
+  Next: `L0_NAME_NONE_REPLY`
+
+**No Response**
+
+- Affection: `-1`
+- Next: `L0_NAME_MISS`
+
+---
+
+## Block `L0_NAME_MARRY_REPLY`
+
+**NPC**
+
+1. That's one way to put it.
+2. A very tidy way.
+
+**Next Block**
+
+- `L0_DECISION_SETUP`
+
+---
+
+## Block `L0_NAME_APOLOGIZE_REPLY`
+
+**NPC**
+
+1. There was a lot of that going around.
+2. Nobody sounded sorry, though.
+
+**Next Block**
+
+- `L0_DECISION_SETUP`
+
+---
+
+## Block `L0_NAME_THANK_REPLY`
+
+**NPC**
+
+1. He's used to that.
+2. Makes rooms like that run smoothly.
+
+**Next Block**
+
+- `L0_DECISION_SETUP`
+
+---
+
+## Block `L0_NAME_NONE_REPLY`
+
+**NPC**
+
+1. Yeah.
+2. Better.
+
+**Next Block**
+
+- `L0_DECISION_SETUP`
+
+---
+
+## Block `L0_NAME_MISS`
+
+**NPC**
+
+1. You passed.
+2. Probably smart.
+
+**Next Block**
+
+- `L0_DECISION_SETUP`
+
+---
+
+## Block `L0_DECISION_SETUP`
+
+**NPC**
+
+1. It's stupid, but all night I've been waiting for somebody to say one thing that sounds real.
+2. Not smart.
+3. Just real.
+
+**Next Block**
+
+- `L0_DECISION_RESPONSE`
+
+---
+
+## Block `L0_DECISION_RESPONSE`
+
+**NPC**
+
+1. So. Give me one.
+
+**Player Options**
+
+- `L0_DECISION_GO`  
+  Text: `Choose yourself.`  
+  Affection: `+2`  
+  Next: `L0_DECISION_GO_REPLY`
+
+- `L0_DECISION_BACK`  
+  Text: `Go back.`  
+  Affection: `0`  
+  Next: `L0_DECISION_BACK_REPLY`
+
+- `L0_DECISION_TELL`  
+  Text: `Tell him plainly.`  
+  Affection: `+1`  
+  Next: `L0_DECISION_TELL_REPLY`
+
+- `L0_DECISION_DRIVER`  
+  Text: `Not my call.`  
+  Affection: `-1`  
+  Next: `L0_DECISION_DRIVER_REPLY`
+
+**No Response**
+
+- Affection: `-2`
+- Next: `L0_DECISION_MISS`
+
+---
+
+## Block `L0_DECISION_GO_REPLY`
+
+**NPC**
+
+1. That's annoyingly clear.
+2. I almost believe you.
+
+**Next Block**
+
+- `L0_FINAL_APPROACH`
+
+---
+
+## Block `L0_DECISION_BACK_REPLY`
+
+**NPC**
+
+1. That would be easier.
+2. Which doesn't make it wrong.
+
+**Next Block**
+
+- `L0_FINAL_APPROACH`
+
+---
+
+## Block `L0_DECISION_TELL_REPLY`
+
+**NPC**
+
+1. Plainly.
+2. You've said that kind of thing before, haven't you?
+
+**Next Block**
+
+- `L0_FINAL_APPROACH`
+
+---
+
+## Block `L0_DECISION_DRIVER_REPLY`
+
+**NPC**
+
+1. No.
+2. But people do say strange honest things to drivers.
+
+**Next Block**
+
+- `L0_FINAL_APPROACH`
+
+---
+
+## Block `L0_DECISION_MISS`
+
+**NPC**
+
+1. Right.
+2. Leave it hanging.
+
+**Next Block**
+
+- `L0_FINAL_APPROACH`
+
+---
+
+## Block `L0_FINAL_APPROACH`
+
+**NPC**
+
+1. All right.
+2. Not Crescent Hotel.
+3. Shin-Ori Station.
+4. If I miss the last express, maybe that's that.
+5. If I make it...
+
+**Next Block**
+
+- `L0_FINAL_RESPONSE`
+
+---
+
+## Block `L0_FINAL_RESPONSE`
+
+**NPC**
+
+1. Finish it.
+
+**Player Options**
+
+- `L0_FINAL_BEGIN`  
+  Text: `Then begin.`  
+  Affection: `+3`  
+  Next: `L0_END_BEGIN`
+
+- `L0_FINAL_BREATHE`  
+  Text: `Then choose.`  
+  Affection: `+2`  
+  Next: `L0_END_BREATHE`
+
+- `L0_FINAL_CALL`  
+  Text: `Then call him.`  
+  Affection: `+1`  
+  Next: `L0_END_CALL`
+
+- `L0_FINAL_COLD`  
+  Text: `Don't drift.`  
+  Affection: `-1`  
+  Next: `L0_END_COLD`
+
+**No Response**
+
+- Affection: `-2`
+- Next: `L0_END_MISS`
+
+---
+
+## Block `L0_END_BEGIN`
+
+**NPC**
+
+1. Begin.
+2. You make it sound almost normal.
+3. Say it again in five minutes.
+
+**Next Block**
+
+- `L0_END_COMMON`
+
+---
+
+## Block `L0_END_BREATHE`
+
+**NPC**
+
+1. Maybe that's enough for one night.
+2. Not brave.
+3. Just enough.
+
+**Next Block**
+
+- `L0_END_COMMON`
+
+---
+
+## Block `L0_END_CALL`
+
+**NPC**
+
+1. You really like things neat.
+2. I don't hate that.
+3. Still... maybe.
+
+**Next Block**
+
+- `L0_END_COMMON`
+
+---
+
+## Block `L0_END_COLD`
+
+**NPC**
+
+1. No.
+2. You're right, though.
+3. A station's just a station.
+4. The hard part starts after.
+
+**Next Block**
+
+- `L0_END_COMMON`
+
+---
+
+## Block `L0_END_MISS`
+
+**NPC**
+
+1. One last chance.
+2. All right.
+
+**Next Block**
+
+- `L0_END_COMMON`
+
+---
+
+## Block `L0_END_COMMON`
+
+**NPC**
+
+1. There.
+2. That's the station sign.
+3. Funny. I started this ride trying to sound in control.
+4. Maybe I just wanted somebody to answer back.
+5. Thanks. Or... whatever this was.
+6. Just don't forget me before the light changes.
+
+**Next Block**
+
+- `END`
+
+---
+
+## Notes For Revision
+
+- Keep response text short enough to scan in under four seconds.
+- Preserve block IDs and option IDs if later levels depend on `StorySessionState`.
+- Safe places to revise tone without breaking logic:
+  - NPC line wording
+  - Option display text
+  - Reply block wording
+- Riskier changes:
+  - Renaming block IDs
+  - Renaming option IDs
+  - Changing branch destinations already planned for later callbacks
+    </script>
+
     <script>
-        const STORAGE_KEY = "story-tree-editor-data-v1";
+        const STORAGE_KEY = "level0-dialogue-tree-site-v2";
 
-        let idCounter = 1;
-        let tree = loadTree();
-        let selectedNodeId = tree.id;
+        const graphStage = document.getElementById("graphStage");
+        const graphEdges = document.getElementById("graphEdges");
+        const metricBlocks = document.getElementById("metricBlocks");
+        const metricOptions = document.getElementById("metricOptions");
+        const metricNoResponse = document.getElementById("metricNoResponse");
+        const metricLeafs = document.getElementById("metricLeafs");
+        const sourceInput = document.getElementById("sourceInput");
+        const overviewTags = document.getElementById("overviewTags");
 
-        const treeContainer = document.getElementById("treeContainer");
-        const emptyState = document.getElementById("emptyState");
-        const editor = document.getElementById("editor");
-        const branchesEditor = document.getElementById("branchesEditor");
-        const nodeIdInput = document.getElementById("nodeIdInput");
-        const nodeTitleInput = document.getElementById("nodeTitleInput");
-        const nodeNotesInput = document.getElementById("nodeNotesInput");
+        const selectionHint = document.getElementById("selectionHint");
+        const editorPanel = document.getElementById("editorPanel");
+        const blockIdInput = document.getElementById("blockIdInput");
+        const blockTitleInput = document.getElementById("blockTitleInput");
+        const npcLinesInput = document.getElementById("npcLinesInput");
+        const nextBlockInput = document.getElementById("nextBlockInput");
+        const noResponseAffectionInput = document.getElementById("noResponseAffectionInput");
+        const noResponseNextInput = document.getElementById("noResponseNextInput");
+        const optionsList = document.getElementById("optionsList");
 
-        function createEmptyNode(title = "新节点") {
+        const seedMarkdown = document.getElementById("seedMarkdown").textContent.trim();
+
+        let state = loadState();
+        let selectedBlockId = state.order[0] || "";
+
+        function createEmptyBlock(id) {
             return {
-                id: `NODE_${idCounter++}`,
-                title,
-                notes: "",
-                branches: []
+                id,
+                title: "",
+                npcLines: [],
+                options: [],
+                nextBlockId: "",
+                noResponse: {
+                    affection: "",
+                    nextBlockId: ""
+                }
             };
         }
 
-        function loadTree() {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) {
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
                 try {
-                    const parsed = JSON.parse(raw);
-                    idCounter = Math.max(findMaxCounter(parsed) + 1, 1);
-                    return parsed;
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.blocks && parsed.order && parsed.sourceMarkdown) {
+                        return normalizeModel(parsed);
+                    }
                 } catch {
                 }
             }
 
-            return {
-                id: "ROOT",
-                title: "根节点",
-                notes: "",
-                branches: []
+            return parseMarkdownToModel(seedMarkdown);
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function normalizeModel(model) {
+            const safe = {
+                sourceMarkdown: model.sourceMarkdown || "",
+                preamble: model.preamble || "# Dialogue Script\n",
+                overview: Array.isArray(model.overview) ? model.overview : [],
+                tailNotes: model.tailNotes || "",
+                order: Array.isArray(model.order) ? [...model.order] : [],
+                blocks: {}
             };
-        }
 
-        function saveTree() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(tree, null, 2));
-        }
-
-        function findMaxCounter(node) {
-            let max = 0;
-            const match = /NODE_(\d+)/.exec(node.id || "");
-            if (match) {
-                max = Number(match[1]);
-            }
-
-            (node.branches || []).forEach((branch) => {
-                max = Math.max(max, findMaxCounter(branch.target));
+            safe.order.forEach((id) => {
+                const rawBlock = model.blocks[id] || createEmptyBlock(id);
+                safe.blocks[id] = {
+                    id,
+                    title: rawBlock.title || "",
+                    npcLines: Array.isArray(rawBlock.npcLines) ? [...rawBlock.npcLines] : [],
+                    options: Array.isArray(rawBlock.options)
+                        ? rawBlock.options.map((option) => ({
+                            optionId: option.optionId || "",
+                            text: option.text || "",
+                            affection: option.affection || "",
+                            nextBlockId: option.nextBlockId || ""
+                        }))
+                        : [],
+                    nextBlockId: rawBlock.nextBlockId || "",
+                    noResponse: {
+                        affection: rawBlock.noResponse?.affection || "",
+                        nextBlockId: rawBlock.noResponse?.nextBlockId || ""
+                    }
+                };
             });
 
-            return max;
+            return safe;
         }
 
-        function findNodeAndParent(node, targetId, parent = null) {
-            if (node.id === targetId) {
-                return { node, parent };
-            }
+        function parseMarkdownToModel(markdown) {
+            const trimmed = markdown.replace(/\r\n/g, "\n").trim();
+            const blockRegex = /^## Block `([^`]+)`$/gm;
+            const headings = [...trimmed.matchAll(blockRegex)];
 
-            for (const branch of node.branches) {
-                const found = findNodeAndParent(branch.target, targetId, node);
-                if (found) {
-                    return found;
-                }
-            }
-
-            return null;
-        }
-
-        function renderTree() {
-            treeContainer.innerHTML = "";
-            const rootList = document.createElement("ul");
-            rootList.className = "tree-root";
-            rootList.appendChild(renderNodeItem(tree, null));
-            treeContainer.appendChild(rootList);
-        }
-
-        function renderNodeItem(node, branchLabel) {
-            const li = document.createElement("li");
-
-            if (branchLabel) {
-                const tag = document.createElement("div");
-                tag.className = "branch-tag";
-                tag.textContent = branchLabel || "未命名分支";
-                li.appendChild(tag);
-            }
-
-            const card = document.createElement("div");
-            card.className = "node";
-            if (node.id === selectedNodeId) {
-                card.classList.add("selected");
-            }
-            card.addEventListener("click", () => {
-                selectedNodeId = node.id;
-                renderAll();
-            });
-
-            const title = document.createElement("div");
-            title.className = "node-title";
-            title.textContent = node.title || "未命名节点";
-
-            const id = document.createElement("div");
-            id.className = "node-id";
-            id.textContent = node.id;
-
-            const meta = document.createElement("div");
-            meta.className = "node-meta";
-            meta.textContent = `分支数：${node.branches.length}`;
-
-            card.appendChild(title);
-            card.appendChild(id);
-            card.appendChild(meta);
-            li.appendChild(card);
-
-            if (node.branches.length > 0) {
-                const ul = document.createElement("ul");
-                node.branches.forEach((branch) => {
-                    ul.appendChild(renderNodeItem(branch.target, branch.label));
-                });
-                li.appendChild(ul);
-            }
-
-            return li;
-        }
-
-        function renderEditor() {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found) {
-                emptyState.style.display = "";
-                editor.style.display = "none";
-                branchesEditor.innerHTML = "";
-                return;
-            }
-
-            const { node } = found;
-            emptyState.style.display = "none";
-            editor.style.display = "";
-
-            nodeIdInput.value = node.id || "";
-            nodeTitleInput.value = node.title || "";
-            nodeNotesInput.value = node.notes || "";
-
-            branchesEditor.innerHTML = "";
-            if (node.branches.length === 0) {
-                const empty = document.createElement("div");
-                empty.className = "empty";
-                empty.textContent = "这个节点还没有分支。";
-                branchesEditor.appendChild(empty);
-                return;
-            }
-
-            node.branches.forEach((branch, index) => {
-                const item = document.createElement("div");
-                item.className = "branch-item";
-
-                const label = document.createElement("label");
-                label.innerHTML = `
-                    <span class="label-title">分支名称</span>
-                    <input type="text" value="${escapeHtml(branch.label || "")}" data-branch-label="${index}">
-                `;
-
-                const targetInfo = document.createElement("div");
-                targetInfo.className = "branch-meta";
-                targetInfo.textContent = `目标节点：${branch.target.id} / ${branch.target.title || "未命名节点"}`;
-
-                const row = document.createElement("div");
-                row.className = "row";
-
-                const jumpButton = document.createElement("button");
-                jumpButton.textContent = "跳到这个子节点";
-                jumpButton.addEventListener("click", () => {
-                    selectedNodeId = branch.target.id;
-                    renderAll();
-                });
-
-                const addSiblingButton = document.createElement("button");
-                addSiblingButton.className = "secondary";
-                addSiblingButton.textContent = "在这条下面再加一支";
-                addSiblingButton.addEventListener("click", () => {
-                    node.branches.splice(index + 1, 0, {
-                        label: "新分支",
-                        target: createEmptyNode()
-                    });
-                    saveTree();
-                    renderAll();
-                });
-
-                const removeButton = document.createElement("button");
-                removeButton.className = "danger";
-                removeButton.textContent = "删除这条分支";
-                removeButton.addEventListener("click", () => {
-                    node.branches.splice(index, 1);
-                    saveTree();
-                    renderAll();
-                });
-
-                row.appendChild(jumpButton);
-                row.appendChild(addSiblingButton);
-                row.appendChild(removeButton);
-
-                item.appendChild(label);
-                item.appendChild(targetInfo);
-                item.appendChild(row);
-                branchesEditor.appendChild(item);
-            });
-
-            branchesEditor.querySelectorAll("input[data-branch-label]").forEach((input) => {
-                input.addEventListener("input", (event) => {
-                    const branchIndex = Number(event.target.getAttribute("data-branch-label"));
-                    node.branches[branchIndex].label = event.target.value;
-                    saveTree();
-                    renderTree();
-                });
-            });
-        }
-
-        function renderAll() {
-            renderTree();
-            renderEditor();
-        }
-
-        function escapeHtml(value) {
-            return value
-                .replaceAll("&", "&amp;")
-                .replaceAll("\"", "&quot;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;");
-        }
-
-        nodeIdInput.addEventListener("input", (event) => {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found) {
-                return;
-            }
-
-            found.node.id = event.target.value || found.node.id;
-            selectedNodeId = found.node.id;
-            saveTree();
-            renderAll();
-        });
-
-        nodeTitleInput.addEventListener("input", (event) => {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found) {
-                return;
-            }
-
-            found.node.title = event.target.value;
-            saveTree();
-            renderTree();
-        });
-
-        nodeNotesInput.addEventListener("input", (event) => {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found) {
-                return;
-            }
-
-            found.node.notes = event.target.value;
-            saveTree();
-        });
-
-        document.getElementById("appendBranchButton").addEventListener("click", () => {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found) {
-                return;
-            }
-
-            found.node.branches.push({
-                label: "新分支",
-                target: createEmptyNode()
-            });
-            saveTree();
-            renderAll();
-        });
-
-        document.getElementById("addChildButton").addEventListener("click", () => {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found) {
-                return;
-            }
-
-            found.node.branches.push({
-                label: "新分支",
-                target: createEmptyNode()
-            });
-            saveTree();
-            renderAll();
-        });
-
-        document.getElementById("addSiblingButton").addEventListener("click", () => {
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found || !found.parent) {
-                return;
-            }
-
-            const parent = found.parent;
-            const index = parent.branches.findIndex((branch) => branch.target.id === selectedNodeId);
-            if (index === -1) {
-                return;
-            }
-
-            parent.branches.splice(index + 1, 0, {
-                label: "新分支",
-                target: createEmptyNode()
-            });
-            saveTree();
-            renderAll();
-        });
-
-        document.getElementById("deleteNodeButton").addEventListener("click", () => {
-            if (selectedNodeId === tree.id) {
-                return;
-            }
-
-            const found = findNodeAndParent(tree, selectedNodeId);
-            if (!found || !found.parent) {
-                return;
-            }
-
-            found.parent.branches = found.parent.branches.filter((branch) => branch.target.id !== selectedNodeId);
-            selectedNodeId = found.parent.id;
-            saveTree();
-            renderAll();
-        });
-
-        document.getElementById("newTreeButton").addEventListener("click", () => {
-            tree = {
-                id: "ROOT",
-                title: "根节点",
-                notes: "",
-                branches: []
+            const model = {
+                sourceMarkdown: trimmed,
+                preamble: headings.length > 0 ? trimmed.slice(0, headings[0].index).trim() : trimmed,
+                overview: [],
+                tailNotes: "",
+                order: [],
+                blocks: {}
             };
-            selectedNodeId = tree.id;
-            idCounter = 1;
-            saveTree();
-            renderAll();
-        });
 
-        document.getElementById("exportButton").addEventListener("click", () => {
-            const blob = new Blob([JSON.stringify(tree, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "剧情树.json";
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        document.getElementById("copyJsonButton").addEventListener("click", async () => {
-            try {
-                await navigator.clipboard.writeText(JSON.stringify(tree, null, 2));
-            } catch {
-                alert("复制失败。");
+            const overviewMatch = trimmed.match(/## Overview\s+([\s\S]*?)\n---/);
+            if (overviewMatch) {
+                model.overview = [...overviewMatch[1].matchAll(/^- (.+)$/gm)].map((match) => match[1].trim());
             }
-        });
 
-        document.getElementById("importButton").addEventListener("click", () => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = ".json,application/json";
-            input.addEventListener("change", () => {
-                const file = input.files && input.files[0];
-                if (!file) {
+            for (let index = 0; index < headings.length; index += 1) {
+                const match = headings[index];
+                const blockId = match[1].trim();
+                const start = match.index + match[0].length;
+                const end = index + 1 < headings.length ? headings[index + 1].index : trimmed.length;
+                const section = trimmed.slice(start, end).trim();
+                const block = createEmptyBlock(blockId);
+
+                const npcSection = extractSection(section, "**NPC**");
+                block.npcLines = [...npcSection.matchAll(/^\d+\.\s+(.*)$/gm)].map((line) => line[1].trim());
+
+                const optionsSection = extractSection(section, "**Player Options**");
+                const optionRegex = /- `([^`]+)`\s+Text: `([^`]*)`\s+Affection: `([^`]*)`\s+Next: `([^`]*)`/g;
+                block.options = [...optionsSection.matchAll(optionRegex)].map((optionMatch) => ({
+                    optionId: optionMatch[1].trim(),
+                    text: optionMatch[2].trim(),
+                    affection: optionMatch[3].trim(),
+                    nextBlockId: optionMatch[4].trim()
+                }));
+
+                const noResponseSection = extractSection(section, "**No Response**");
+                const noResponseAffection = noResponseSection.match(/Affection:\s*`([^`]*)`/);
+                const noResponseNext = noResponseSection.match(/Next:\s*`([^`]*)`/);
+                block.noResponse = {
+                    affection: noResponseAffection ? noResponseAffection[1].trim() : "",
+                    nextBlockId: noResponseNext ? noResponseNext[1].trim() : ""
+                };
+
+                const nextMatch = section.match(/\*\*Next Block\*\*[\s\S]*?- `([^`]+)`/);
+                block.nextBlockId = nextMatch ? nextMatch[1].trim() : "";
+
+                model.order.push(blockId);
+                model.blocks[blockId] = block;
+            }
+
+            const notesIndex = trimmed.indexOf("## Notes For Revision");
+            model.tailNotes = notesIndex >= 0 ? trimmed.slice(notesIndex).trim() : "";
+
+            return normalizeModel(model);
+        }
+
+        function extractSection(section, marker) {
+            const start = section.indexOf(marker);
+            if (start === -1) {
+                return "";
+            }
+
+            const rest = section.slice(start + marker.length).trimStart();
+            const nextMarkerIndex = rest.search(/\n\*\*(NPC|Player Options|No Response|Next Block)\*\*/);
+            if (nextMarkerIndex === -1) {
+                return rest.trim();
+            }
+
+            return rest.slice(0, nextMarkerIndex).trim();
+        }
+
+        function exportModelToMarkdown(model) {
+            const lines = [];
+            lines.push((model.preamble || "# Dialogue Script").trim());
+            lines.push("");
+
+            if (model.overview.length > 0 && !/^## Overview/m.test(lines.join("\n"))) {
+                lines.push("## Overview");
+                lines.push("");
+                model.overview.forEach((item) => lines.push(`- ${item}`));
+                lines.push("");
+                lines.push("---");
+                lines.push("");
+            }
+
+            model.order.forEach((blockId, index) => {
+                const block = model.blocks[blockId];
+                if (!block) {
                     return;
                 }
 
-                const reader = new FileReader();
-                reader.onload = () => {
-                    try {
-                        tree = JSON.parse(String(reader.result));
-                        idCounter = Math.max(findMaxCounter(tree) + 1, 1);
-                        selectedNodeId = tree.id;
-                        saveTree();
-                        renderAll();
-                    } catch {
-                        alert("导入失败，JSON 格式有问题。");
+                lines.push(`## Block \`${block.id}\``);
+                lines.push("");
+                lines.push("**NPC**");
+                lines.push("");
+
+                if (block.npcLines.length === 0) {
+                    lines.push("1. ");
+                } else {
+                    block.npcLines.forEach((line, lineIndex) => {
+                        lines.push(`${lineIndex + 1}. ${line}`);
+                    });
+                }
+
+                lines.push("");
+
+                if (block.options.length > 0) {
+                    lines.push("**Player Options**");
+                    lines.push("");
+
+                    block.options.forEach((option) => {
+                        lines.push(`- \`${option.optionId || "OPTION_ID"}\`  `);
+                        lines.push(`  Text: \`${option.text || ""}\`  `);
+                        lines.push(`  Affection: \`${option.affection || ""}\`  `);
+                        lines.push(`  Next: \`${option.nextBlockId || ""}\``);
+                        lines.push("");
+                    });
+
+                    if (block.noResponse.affection || block.noResponse.nextBlockId) {
+                        lines.push("**No Response**");
+                        lines.push("");
+                        lines.push(`- Affection: \`${block.noResponse.affection || ""}\``);
+                        lines.push(`- Next: \`${block.noResponse.nextBlockId || ""}\``);
+                        lines.push("");
                     }
-                };
-                reader.readAsText(file, "utf-8");
+                }
+
+                if (block.nextBlockId) {
+                    lines.push("**Next Block**");
+                    lines.push("");
+                    lines.push(`- \`${block.nextBlockId}\``);
+                    lines.push("");
+                }
+
+                if (index < model.order.length - 1) {
+                    lines.push("---");
+                    lines.push("");
+                }
             });
-            input.click();
+
+            if (model.tailNotes) {
+                lines.push("");
+                lines.push("---");
+                lines.push("");
+                lines.push(model.tailNotes.trim());
+            }
+
+            return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+        }
+
+        function buildGraphMetrics() {
+            const blocks = state.order.map((id) => state.blocks[id]).filter(Boolean);
+            const optionCount = blocks.reduce((sum, block) => sum + block.options.length, 0);
+            const noResponseCount = blocks.filter((block) => block.noResponse.nextBlockId || block.noResponse.affection).length;
+            const leafCount = blocks.filter((block) => collectOutgoingTargets(block).length === 0).length;
+
+            metricBlocks.textContent = String(blocks.length);
+            metricOptions.textContent = String(optionCount);
+            metricNoResponse.textContent = String(noResponseCount);
+            metricLeafs.textContent = String(leafCount);
+        }
+
+        function renderOverview() {
+            overviewTags.innerHTML = "";
+            state.overview.forEach((item) => {
+                const tag = document.createElement("span");
+                tag.className = "pill";
+                tag.textContent = item;
+                overviewTags.appendChild(tag);
+            });
+        }
+
+        function collectOutgoingTargets(block) {
+            const targets = [];
+            if (block.nextBlockId && block.nextBlockId !== "END") {
+                targets.push(block.nextBlockId);
+            }
+            if (block.noResponse.nextBlockId && block.noResponse.nextBlockId !== "END") {
+                targets.push(block.noResponse.nextBlockId);
+            }
+            block.options.forEach((option) => {
+                if (option.nextBlockId && option.nextBlockId !== "END") {
+                    targets.push(option.nextBlockId);
+                }
+            });
+            return targets;
+        }
+
+        function computeDepths() {
+            const incoming = new Map(state.order.map((id) => [id, 0]));
+
+            state.order.forEach((id) => {
+                const block = state.blocks[id];
+                collectOutgoingTargets(block).forEach((targetId) => {
+                    if (incoming.has(targetId)) {
+                        incoming.set(targetId, incoming.get(targetId) + 1);
+                    }
+                });
+            });
+
+            const roots = state.order.filter((id) => incoming.get(id) === 0);
+            if (roots.length === 0 && state.order.length > 0) {
+                roots.push(state.order[0]);
+            }
+
+            const depth = new Map();
+            const queue = roots.map((id) => ({ id, depth: 0 }));
+            while (queue.length > 0) {
+                const item = queue.shift();
+                const currentDepth = depth.get(item.id);
+                if (currentDepth !== undefined && currentDepth <= item.depth) {
+                    continue;
+                }
+
+                depth.set(item.id, item.depth);
+                const block = state.blocks[item.id];
+                if (!block) {
+                    continue;
+                }
+
+                collectOutgoingTargets(block).forEach((targetId) => {
+                    if (state.blocks[targetId]) {
+                        queue.push({ id: targetId, depth: item.depth + 1 });
+                    }
+                });
+            }
+
+            let fallbackDepth = depth.size > 0 ? Math.max(...depth.values()) + 1 : 0;
+            state.order.forEach((id) => {
+                if (!depth.has(id)) {
+                    depth.set(id, fallbackDepth);
+                    fallbackDepth += 1;
+                }
+            });
+
+            return depth;
+        }
+
+        function renderGraph() {
+            graphStage.querySelectorAll(".graph-node").forEach((node) => node.remove());
+            graphEdges.innerHTML = "";
+
+            if (state.order.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "graph-empty";
+                empty.textContent = "还没有节点。你可以先在右边源文本里粘贴对白，或者点击“新增空白节点”。";
+                graphStage.appendChild(empty);
+                graphStage.style.width = "900px";
+                graphStage.style.height = "560px";
+                return;
+            }
+
+            const depths = computeDepths();
+            const columns = new Map();
+            state.order.forEach((id) => {
+                const column = depths.get(id) || 0;
+                if (!columns.has(column)) {
+                    columns.set(column, []);
+                }
+                columns.get(column).push(id);
+            });
+
+            const cardWidth = 260;
+            const columnGap = 120;
+            const rowGap = 36;
+            const topPadding = 20;
+            const leftPadding = 28;
+            const positions = new Map();
+            let maxBottom = 0;
+
+            [...columns.keys()].sort((a, b) => a - b).forEach((columnIndex) => {
+                let y = topPadding;
+                columns.get(columnIndex).forEach((id) => {
+                    const block = state.blocks[id];
+                    const x = leftPadding + columnIndex * (cardWidth + columnGap);
+                    const card = document.createElement("article");
+                    card.className = "graph-node" + (selectedBlockId === id ? " selected" : "");
+                    card.style.left = `${x}px`;
+                    card.style.top = `${y}px`;
+                    card.dataset.blockId = id;
+
+                    const title = block.title || block.npcLines[0] || "未命名节点";
+                    card.innerHTML = `
+                        <div class="node-id">${escapeHtml(block.id)}</div>
+                        <div class="node-title">${escapeHtml(title)}</div>
+                        <div class="node-preview">${escapeHtml(block.npcLines.slice(0, 3).join("\n") || "暂无 NPC 文本")}</div>
+                        <div class="badge-row">
+                            <span class="badge option">选项 ${block.options.length}</span>
+                            <span class="badge next">默认流向 ${block.nextBlockId ? "1" : "0"}</span>
+                            <span class="badge miss">未回应 ${block.noResponse.nextBlockId ? "1" : "0"}</span>
+                        </div>
+                    `;
+
+                    card.addEventListener("click", () => {
+                        selectedBlockId = id;
+                        renderAll();
+                    });
+
+                    graphStage.appendChild(card);
+                    const height = card.offsetHeight;
+                    positions.set(id, { x, y, width: cardWidth, height });
+                    y += height + rowGap;
+                    maxBottom = Math.max(maxBottom, y);
+                });
+            });
+
+            const maxDepth = Math.max(...columns.keys());
+            graphStage.style.width = `${leftPadding * 2 + (maxDepth + 1) * cardWidth + maxDepth * columnGap}px`;
+            graphStage.style.height = `${Math.max(maxBottom + 30, 560)}px`;
+            graphEdges.setAttribute("width", graphStage.style.width);
+            graphEdges.setAttribute("height", graphStage.style.height);
+            graphEdges.setAttribute("viewBox", `0 0 ${parseFloat(graphStage.style.width)} ${parseFloat(graphStage.style.height)}`);
+
+            state.order.forEach((id) => {
+                const block = state.blocks[id];
+                const source = positions.get(id);
+                if (!source) {
+                    return;
+                }
+
+                const edges = [];
+                if (block.nextBlockId) {
+                    edges.push({ type: "next", label: "Next", targetId: block.nextBlockId });
+                }
+                if (block.noResponse.nextBlockId) {
+                    edges.push({ type: "miss", label: `No Response ${block.noResponse.affection || ""}`.trim(), targetId: block.noResponse.nextBlockId });
+                }
+                block.options.forEach((option) => {
+                    if (option.nextBlockId) {
+                        edges.push({ type: "option", label: option.text || option.optionId || "Option", targetId: option.nextBlockId });
+                    }
+                });
+
+                edges.forEach((edge) => {
+                    if (edge.targetId === "END") {
+                        drawEndEdge(source, edge);
+                        return;
+                    }
+
+                    const target = positions.get(edge.targetId);
+                    if (!target) {
+                        return;
+                    }
+
+                    drawEdge(source, target, edge);
+                });
+            });
+        }
+
+        function drawEndEdge(source, edge) {
+            const startX = source.x + source.width;
+            const startY = source.y + source.height / 2;
+            const endX = startX + 90;
+            const endY = startY;
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("class", `edge-path edge-${edge.type}`);
+            path.setAttribute("d", `M ${startX} ${startY} C ${startX + 40} ${startY}, ${endX - 30} ${endY}, ${endX} ${endY}`);
+            graphEdges.appendChild(path);
+
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.setAttribute("class", "edge-label");
+            label.setAttribute("x", String(startX + 42));
+            label.setAttribute("y", String(startY - 10));
+            label.textContent = `${edge.label} -> END`;
+            graphEdges.appendChild(label);
+        }
+
+        function drawEdge(source, target, edge) {
+            const startX = source.x + source.width;
+            const startY = source.y + source.height / 2;
+            const endX = target.x;
+            const endY = target.y + target.height / 2;
+            const curve = Math.max(44, (endX - startX) / 2);
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("class", `edge-path edge-${edge.type}`);
+            path.setAttribute("d", `M ${startX} ${startY} C ${startX + curve} ${startY}, ${endX - curve} ${endY}, ${endX} ${endY}`);
+            graphEdges.appendChild(path);
+
+            const midX = startX + (endX - startX) / 2;
+            const midY = startY + (endY - startY) / 2;
+            const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            label.setAttribute("class", "edge-label");
+            label.setAttribute("x", String(midX));
+            label.setAttribute("y", String(midY - 10));
+            label.textContent = edge.label;
+            graphEdges.appendChild(label);
+        }
+
+        function renderEditor() {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                selectionHint.style.display = "";
+                editorPanel.style.display = "none";
+                optionsList.innerHTML = "";
+                return;
+            }
+
+            selectionHint.style.display = "none";
+            editorPanel.style.display = "";
+
+            blockIdInput.value = block.id;
+            blockTitleInput.value = block.title || "";
+            npcLinesInput.value = block.npcLines.join("\n");
+            nextBlockInput.value = block.nextBlockId || "";
+            noResponseAffectionInput.value = block.noResponse.affection || "";
+            noResponseNextInput.value = block.noResponse.nextBlockId || "";
+
+            optionsList.innerHTML = "";
+            if (block.options.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "hint";
+                empty.textContent = "这个节点还没有玩家选项。上面按钮可以直接新增。";
+                optionsList.appendChild(empty);
+                return;
+            }
+
+            block.options.forEach((option, index) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "option-card";
+                wrapper.innerHTML = `
+                    <div class="option-head">
+                        <div class="option-title">选项 ${index + 1}</div>
+                        <button class="small danger" data-remove-option="${index}">删除</button>
+                    </div>
+                    <label>
+                        <span class="label-title">Option ID</span>
+                        <input type="text" data-option-id="${index}" value="${escapeHtml(option.optionId || "")}">
+                    </label>
+                    <label>
+                        <span class="label-title">显示文本</span>
+                        <input type="text" data-option-text="${index}" value="${escapeHtml(option.text || "")}">
+                    </label>
+                    <div class="inline-grid">
+                        <label>
+                            <span class="label-title">Affection</span>
+                            <input type="text" data-option-affection="${index}" value="${escapeHtml(option.affection || "")}">
+                        </label>
+                        <label>
+                            <span class="label-title">Next Block</span>
+                            <input type="text" data-option-next="${index}" value="${escapeHtml(option.nextBlockId || "")}">
+                        </label>
+                    </div>
+                `;
+                optionsList.appendChild(wrapper);
+            });
+
+            optionsList.querySelectorAll("[data-remove-option]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const index = Number(button.getAttribute("data-remove-option"));
+                    block.options.splice(index, 1);
+                    syncSourceFromState();
+                    renderAll();
+                });
+            });
+
+            bindOptionInputs(block);
+        }
+
+        function bindOptionInputs(block) {
+            optionsList.querySelectorAll("[data-option-id]").forEach((input) => {
+                input.addEventListener("input", (event) => {
+                    const index = Number(event.target.getAttribute("data-option-id"));
+                    block.options[index].optionId = event.target.value;
+                    syncSourceFromState();
+                    renderGraph();
+                });
+            });
+
+            optionsList.querySelectorAll("[data-option-text]").forEach((input) => {
+                input.addEventListener("input", (event) => {
+                    const index = Number(event.target.getAttribute("data-option-text"));
+                    block.options[index].text = event.target.value;
+                    syncSourceFromState();
+                    renderGraph();
+                });
+            });
+
+            optionsList.querySelectorAll("[data-option-affection]").forEach((input) => {
+                input.addEventListener("input", (event) => {
+                    const index = Number(event.target.getAttribute("data-option-affection"));
+                    block.options[index].affection = event.target.value;
+                    syncSourceFromState();
+                });
+            });
+
+            optionsList.querySelectorAll("[data-option-next]").forEach((input) => {
+                input.addEventListener("input", (event) => {
+                    const index = Number(event.target.getAttribute("data-option-next"));
+                    block.options[index].nextBlockId = event.target.value.trim();
+                    syncSourceFromState();
+                    renderGraph();
+                });
+            });
+        }
+
+        function renameBlockId(oldId, newId) {
+            if (!newId || oldId === newId) {
+                return true;
+            }
+
+            if (state.blocks[newId]) {
+                alert(`Block ID "${newId}" 已存在，请换一个。`);
+                return false;
+            }
+
+            const block = state.blocks[oldId];
+            delete state.blocks[oldId];
+            block.id = newId;
+            state.blocks[newId] = block;
+            state.order = state.order.map((id) => (id === oldId ? newId : id));
+
+            state.order.forEach((id) => {
+                const current = state.blocks[id];
+                if (current.nextBlockId === oldId) {
+                    current.nextBlockId = newId;
+                }
+                if (current.noResponse.nextBlockId === oldId) {
+                    current.noResponse.nextBlockId = newId;
+                }
+                current.options.forEach((option) => {
+                    if (option.nextBlockId === oldId) {
+                        option.nextBlockId = newId;
+                    }
+                });
+            });
+
+            selectedBlockId = newId;
+            return true;
+        }
+
+        function deleteBlock(blockId) {
+            if (!state.blocks[blockId]) {
+                return;
+            }
+
+            delete state.blocks[blockId];
+            state.order = state.order.filter((id) => id !== blockId);
+
+            state.order.forEach((id) => {
+                const block = state.blocks[id];
+                if (block.nextBlockId === blockId) {
+                    block.nextBlockId = "";
+                }
+                if (block.noResponse.nextBlockId === blockId) {
+                    block.noResponse.nextBlockId = "";
+                    block.noResponse.affection = block.noResponse.affection || "";
+                }
+                block.options = block.options.filter((option) => option.nextBlockId !== blockId);
+            });
+
+            selectedBlockId = state.order[0] || "";
+        }
+
+        function getNextGeneratedBlockId() {
+            let counter = state.order.length + 1;
+            while (state.blocks[`NEW_BLOCK_${counter}`]) {
+                counter += 1;
+            }
+            return `NEW_BLOCK_${counter}`;
+        }
+
+        function syncSourceFromState() {
+            state.sourceMarkdown = exportModelToMarkdown(state);
+            sourceInput.value = state.sourceMarkdown;
+            saveState();
+        }
+
+        function renderAll() {
+            buildGraphMetrics();
+            renderOverview();
+            renderGraph();
+            renderEditor();
+            sourceInput.value = state.sourceMarkdown || exportModelToMarkdown(state);
+            saveState();
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll("\"", "&quot;");
+        }
+
+        blockIdInput.addEventListener("change", (event) => {
+            const trimmed = event.target.value.trim();
+            if (!trimmed) {
+                event.target.value = selectedBlockId;
+                return;
+            }
+            if (renameBlockId(selectedBlockId, trimmed)) {
+                syncSourceFromState();
+                renderAll();
+            } else {
+                event.target.value = selectedBlockId;
+            }
         });
+
+        blockTitleInput.addEventListener("input", (event) => {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                return;
+            }
+            block.title = event.target.value;
+            syncSourceFromState();
+            renderGraph();
+        });
+
+        npcLinesInput.addEventListener("input", (event) => {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                return;
+            }
+            block.npcLines = event.target.value
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean);
+            syncSourceFromState();
+            renderGraph();
+        });
+
+        nextBlockInput.addEventListener("input", (event) => {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                return;
+            }
+            block.nextBlockId = event.target.value.trim();
+            syncSourceFromState();
+            renderGraph();
+        });
+
+        noResponseAffectionInput.addEventListener("input", (event) => {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                return;
+            }
+            block.noResponse.affection = event.target.value.trim();
+            syncSourceFromState();
+        });
+
+        noResponseNextInput.addEventListener("input", (event) => {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                return;
+            }
+            block.noResponse.nextBlockId = event.target.value.trim();
+            syncSourceFromState();
+            renderGraph();
+        });
+
+        document.getElementById("addBlockButton").addEventListener("click", () => {
+            const id = getNextGeneratedBlockId();
+            const block = createEmptyBlock(id);
+            state.blocks[id] = block;
+            state.order.push(id);
+            selectedBlockId = id;
+            syncSourceFromState();
+            renderAll();
+        });
+
+        document.getElementById("addOptionButton").addEventListener("click", () => {
+            const block = state.blocks[selectedBlockId];
+            if (!block) {
+                return;
+            }
+            block.options.push({
+                optionId: `OPTION_${block.options.length + 1}`,
+                text: "",
+                affection: "",
+                nextBlockId: ""
+            });
+            syncSourceFromState();
+            renderAll();
+        });
+
+        document.getElementById("deleteBlockButton").addEventListener("click", () => {
+            if (!selectedBlockId) {
+                return;
+            }
+            const shouldDelete = confirm("删除节点 " + selectedBlockId + " 吗？所有指向它的分支会被清掉。");
+            if (!shouldDelete) {
+                return;
+            }
+            deleteBlock(selectedBlockId);
+            syncSourceFromState();
+            renderAll();
+        });
+
+        document.getElementById("resetSeedButton").addEventListener("click", () => {
+            state = parseMarkdownToModel(seedMarkdown);
+            selectedBlockId = state.order[0] || "";
+            syncSourceFromState();
+            renderAll();
+        });
+
+        document.getElementById("applySourceButton").addEventListener("click", () => {
+            try {
+                state = parseMarkdownToModel(sourceInput.value);
+                selectedBlockId = state.order[0] || "";
+                syncSourceFromState();
+                renderAll();
+            } catch (error) {
+                alert("解析失败：" + (error.message || error));
+            }
+        });
+
+        document.getElementById("copySourceButton").addEventListener("click", async () => {
+            await navigator.clipboard.writeText(sourceInput.value);
+        });
+
+        document.getElementById("copyMarkdownButton").addEventListener("click", async () => {
+            await navigator.clipboard.writeText(exportModelToMarkdown(state));
+        });
+
+        document.getElementById("exportMarkdownButton").addEventListener("click", () => {
+            downloadFile("Level0_Dialogue_Tree.md", exportModelToMarkdown(state), "text/markdown;charset=utf-8");
+        });
+
+        document.getElementById("exportJsonButton").addEventListener("click", () => {
+            downloadFile("Level0_Dialogue_Tree.json", JSON.stringify(state, null, 2), "application/json;charset=utf-8");
+        });
+
+        function downloadFile(fileName, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
 
         renderAll();
     </script>
