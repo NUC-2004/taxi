@@ -184,6 +184,271 @@
             padding: 18px;
         }
 
+        .path-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .path-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 7px 12px;
+            background: rgba(111, 194, 255, 0.08);
+            border: 1px solid rgba(111, 194, 255, 0.18);
+            color: var(--accent-2);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .path-chip.active {
+            background: rgba(245, 185, 113, 0.12);
+            border-color: rgba(245, 185, 113, 0.36);
+            color: #ffd8a4;
+        }
+
+        .flow-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .flow-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 14px;
+            cursor: pointer;
+            transition: border-color 120ms ease, transform 120ms ease;
+        }
+
+        .flow-card:hover {
+            border-color: rgba(111, 194, 255, 0.42);
+            transform: translateY(-1px);
+        }
+
+        .flow-card.selected {
+            border-color: rgba(111, 194, 255, 0.72);
+            box-shadow: 0 0 0 1px rgba(111, 194, 255, 0.22);
+        }
+
+        .flow-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .flow-id {
+            color: var(--accent-2);
+            font-size: 12px;
+        }
+
+        .flow-kind {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .flow-lines {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .flow-line {
+            border-left: 3px solid rgba(111, 194, 255, 0.5);
+            padding-left: 10px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .flow-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .flow-option-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .flow-option {
+            border: 1px solid rgba(245, 185, 113, 0.18);
+            background: rgba(245, 185, 113, 0.06);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .flow-option-text {
+            color: #ffe1b5;
+            margin-bottom: 6px;
+        }
+
+        .flow-option-meta {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .dialogue-tree {
+            display: grid;
+            gap: 18px;
+        }
+
+        .segment-card,
+        .question-node,
+        .branch-box,
+        .continuation-box {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .segment-label,
+        .question-label,
+        .branch-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .question-context,
+        .branch-preview {
+            color: var(--muted);
+            line-height: 1.65;
+            white-space: pre-line;
+        }
+
+        .question-stage {
+            display: grid;
+            gap: 14px;
+            position: relative;
+        }
+
+        .question-stage.nested {
+            margin-left: 28px;
+            padding-left: 18px;
+            border-left: 2px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .question-node {
+            max-width: 460px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, rgba(111, 194, 255, 0.1), rgba(255, 255, 255, 0.03));
+            border-color: rgba(111, 194, 255, 0.24);
+            cursor: pointer;
+        }
+
+        .question-title {
+            font-size: 18px;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+
+        .question-branches {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            padding-top: 26px;
+        }
+
+        .question-branches::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateX(-50%);
+        }
+
+        .question-branches::after {
+            content: "";
+            position: absolute;
+            top: 20px;
+            left: 12%;
+            right: 12%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .branch-lane {
+            position: relative;
+            display: grid;
+            gap: 10px;
+            align-content: start;
+            padding-top: 18px;
+        }
+
+        .branch-lane::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateX(-50%);
+        }
+
+        .branch-box {
+            background: rgba(245, 185, 113, 0.06);
+            border-color: rgba(245, 185, 113, 0.22);
+            cursor: pointer;
+        }
+
+        .branch-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .branch-choice {
+            color: #ffe2b8;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .branch-target {
+            color: var(--muted);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .continuation-box {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .merge-hint {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(111, 194, 255, 0.08);
+            border: 1px solid rgba(111, 194, 255, 0.14);
+            color: var(--accent-2);
+            font-size: 12px;
+            justify-self: center;
+        }
+
+        .question-followups {
+            display: grid;
+            gap: 16px;
+        }
+
         .graph-stage {
             position: relative;
             min-height: 560px;
@@ -474,6 +739,20 @@
                         <div class="value" id="metricLeafs">0</div>
                     </div>
                 </div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">问句分支树</div>
+                <p class="hint" style="margin-bottom:12px;">
+                    这里按“问句 -> 可选回答 -> 这条回答后会发生什么”来展开当前文本，更接近你脑子里看剧情树的方式。
+                </p>
+                <div id="dialogueTreeView" class="dialogue-tree"></div>
+            </div>
+
+            <div class="card">
+                <div class="section-title">当前剧情走向</div>
+                <div id="mainPathChips" class="path-strip"></div>
+                <div id="storyFlowList" class="flow-list"></div>
             </div>
 
             <div class="card">
@@ -1420,6 +1699,9 @@ Current in-game copy for `Level0`, organized by block and branch.
         const metricLeafs = document.getElementById("metricLeafs");
         const sourceInput = document.getElementById("sourceInput");
         const overviewTags = document.getElementById("overviewTags");
+        const mainPathChips = document.getElementById("mainPathChips");
+        const storyFlowList = document.getElementById("storyFlowList");
+        const dialogueTreeView = document.getElementById("dialogueTreeView");
 
         const selectionHint = document.getElementById("selectionHint");
         const editorPanel = document.getElementById("editorPanel");
@@ -1677,6 +1959,300 @@ Current in-game copy for `Level0`, organized by block and branch.
                 tag.className = "pill";
                 tag.textContent = item;
                 overviewTags.appendChild(tag);
+            });
+        }
+
+        function computeMainPath() {
+            const path = [];
+            const visited = new Set();
+            let currentId = state.order[0] || "";
+
+            while (currentId && state.blocks[currentId] && !visited.has(currentId)) {
+                path.push(currentId);
+                visited.add(currentId);
+                const current = state.blocks[currentId];
+                if (!current.nextBlockId || current.nextBlockId === "END") {
+                    break;
+                }
+                currentId = current.nextBlockId;
+            }
+
+            return path;
+        }
+
+        function collectUntilChoice(startId, visited = new Set()) {
+            const lead = [];
+            let currentId = startId;
+
+            while (currentId && currentId !== "END" && state.blocks[currentId] && !visited.has(currentId)) {
+                const block = state.blocks[currentId];
+                visited.add(currentId);
+
+                if (block.options.length > 0) {
+                    return { lead, question: block };
+                }
+
+                lead.push(block);
+                if (!block.nextBlockId || block.nextBlockId === "END") {
+                    return { lead, question: null };
+                }
+
+                currentId = block.nextBlockId;
+            }
+
+            return { lead, question: null };
+        }
+
+        function collectLinearBranch(startId, visited = new Set()) {
+            const blocks = [];
+            let currentId = startId;
+
+            while (currentId && currentId !== "END" && state.blocks[currentId] && !visited.has(currentId)) {
+                const block = state.blocks[currentId];
+                if (block.options.length > 0) {
+                    return { blocks, nextQuestionId: currentId, ended: false };
+                }
+
+                visited.add(currentId);
+                blocks.push(block);
+
+                if (!block.nextBlockId || block.nextBlockId === "END") {
+                    return { blocks, nextQuestionId: "", ended: true };
+                }
+
+                currentId = block.nextBlockId;
+            }
+
+            return { blocks, nextQuestionId: "", ended: true };
+        }
+
+        function renderDialogueTree() {
+            dialogueTreeView.innerHTML = "";
+            if (state.order.length === 0) {
+                dialogueTreeView.innerHTML = `<div class="hint">还没有可展示的剧情节点。</div>`;
+                return;
+            }
+
+            const rootId = state.order[0];
+            const { lead, question } = collectUntilChoice(rootId, new Set());
+
+            if (lead.length > 0) {
+                const leadCard = document.createElement("div");
+                leadCard.className = "segment-card";
+                leadCard.innerHTML = `
+                    <div class="segment-label">开场铺垫</div>
+                    <div class="question-context">${escapeHtml(summarizeBlocks(lead, true))}</div>
+                `;
+                dialogueTreeView.appendChild(leadCard);
+            }
+
+            if (!question) {
+                return;
+            }
+
+            const tree = buildSketchQuestionTree(question.id, new Set(), 0);
+            if (tree) {
+                dialogueTreeView.appendChild(tree);
+            }
+        }
+
+        function summarizeBlocks(blocks, includeIds = false) {
+            return blocks.map((block) => {
+                const text = block.npcLines.join(" / ") || block.title || block.id;
+                return includeIds ? `${block.id}: ${text}` : text;
+            }).join("\n\n");
+        }
+
+        function buildSketchQuestionTree(questionId, visitedQuestions, depth) {
+            if (!questionId || !state.blocks[questionId] || visitedQuestions.has(questionId) || depth > 10) {
+                return null;
+            }
+
+            const question = state.blocks[questionId];
+            const nextVisited = new Set(visitedQuestions);
+            nextVisited.add(questionId);
+
+            const stage = document.createElement("section");
+            stage.className = "question-stage" + (depth > 0 ? " nested" : "");
+
+            const node = document.createElement("div");
+            node.className = "question-node";
+            node.addEventListener("click", () => {
+                selectedBlockId = questionId;
+                renderAll();
+            });
+            node.innerHTML = `
+                <div class="question-label">问句节点</div>
+                <div class="flow-id">${escapeHtml(question.id)}</div>
+                <div class="question-title">${escapeHtml(question.npcLines.join("\n") || question.title || question.id)}</div>
+            `;
+            stage.appendChild(node);
+
+            const branches = [];
+            question.options.forEach((option) => {
+                const linear = collectLinearBranch(option.nextBlockId, new Set());
+                branches.push({
+                    label: option.text || option.optionId || "未命名选项",
+                    optionId: option.optionId || "",
+                    affection: option.affection || "",
+                    startId: option.nextBlockId || "",
+                    isMiss: false,
+                    ...linear
+                });
+            });
+
+            if (question.noResponse.nextBlockId) {
+                const linear = collectLinearBranch(question.noResponse.nextBlockId, new Set());
+                branches.push({
+                    label: "未回应",
+                    optionId: "NO_RESPONSE",
+                    affection: question.noResponse.affection || "",
+                    startId: question.noResponse.nextBlockId || "",
+                    isMiss: true,
+                    ...linear
+                });
+            }
+
+            const branchRow = document.createElement("div");
+            branchRow.className = "question-branches";
+
+            branches.forEach((branch) => {
+                const lane = document.createElement("div");
+                lane.className = "branch-lane";
+
+                const box = document.createElement("div");
+                box.className = "branch-box";
+                box.addEventListener("click", () => {
+                    selectedBlockId = branch.startId && state.blocks[branch.startId] ? branch.startId : questionId;
+                    renderAll();
+                });
+                box.innerHTML = `
+                    <div class="branch-label">${branch.isMiss ? "未回应分支" : "玩家选项"}</div>
+                    <div class="branch-head">
+                        <div class="branch-choice">${escapeHtml(branch.label)}</div>
+                        <div class="branch-target">${escapeHtml(branch.affection ? `Affection ${branch.affection}` : "")}</div>
+                    </div>
+                    <div class="flow-id">${escapeHtml(branch.optionId)}</div>
+                `;
+                lane.appendChild(box);
+
+                const continuation = document.createElement("div");
+                continuation.className = "continuation-box";
+                continuation.innerHTML = `
+                    <div class="branch-label">这条分支后续</div>
+                    <div class="branch-preview">${escapeHtml(
+                        branch.blocks.length > 0
+                            ? summarizeBlocks(branch.blocks, true)
+                            : (branch.startId === "END" ? "直接结束" : "直接进入下一个问句")
+                    )}</div>
+                `;
+                lane.appendChild(continuation);
+
+                const merge = document.createElement("div");
+                merge.className = "merge-hint";
+                if (branch.nextQuestionId) {
+                    merge.textContent = `汇入下一问句 ${branch.nextQuestionId}`;
+                } else if (branch.startId === "END" || branch.ended) {
+                    merge.textContent = "这条线先到这里";
+                } else {
+                    merge.textContent = "继续中";
+                }
+                lane.appendChild(merge);
+
+                branchRow.appendChild(lane);
+            });
+
+            stage.appendChild(branchRow);
+
+            const uniqueNextQuestions = [...new Set(branches.map((branch) => branch.nextQuestionId).filter(Boolean))];
+            if (uniqueNextQuestions.length > 0) {
+                const followups = document.createElement("div");
+                followups.className = "question-followups";
+                uniqueNextQuestions.forEach((nextQuestionId) => {
+                    const child = buildSketchQuestionTree(nextQuestionId, nextVisited, depth + 1);
+                    if (child) {
+                        followups.appendChild(child);
+                    }
+                });
+                stage.appendChild(followups);
+            }
+
+            return stage;
+        }
+
+        function renderStoryFlow() {
+            const mainPath = computeMainPath();
+
+            mainPathChips.innerHTML = "";
+            mainPath.forEach((blockId, index) => {
+                const chip = document.createElement("button");
+                chip.type = "button";
+                chip.className = "path-chip" + (blockId === selectedBlockId ? " active" : "");
+                chip.textContent = `${index + 1}. ${blockId}`;
+                chip.addEventListener("click", () => {
+                    selectedBlockId = blockId;
+                    renderAll();
+                });
+                mainPathChips.appendChild(chip);
+            });
+
+            storyFlowList.innerHTML = "";
+            state.order.forEach((blockId) => {
+                const block = state.blocks[blockId];
+                const card = document.createElement("article");
+                const isSelected = blockId === selectedBlockId;
+                card.className = "flow-card" + (isSelected ? " selected" : "");
+                card.addEventListener("click", () => {
+                    selectedBlockId = blockId;
+                    renderAll();
+                });
+
+                const title = block.title || block.npcLines[0] || "未命名节点";
+                const inMainPath = mainPath.includes(blockId);
+                const linesHtml = block.npcLines.length > 0
+                    ? block.npcLines.map((line) => `<div class="flow-line">${escapeHtml(line)}</div>`).join("")
+                    : `<div class="flow-line">暂无 NPC 文本</div>`;
+
+                const optionsHtml = block.options.length > 0
+                    ? `
+                        <div class="flow-option-list">
+                            ${block.options.map((option) => `
+                                <div class="flow-option">
+                                    <div class="flow-option-text">${escapeHtml(option.text || option.optionId || "未命名选项")}</div>
+                                    <div class="flow-option-meta">Option ID: ${escapeHtml(option.optionId || "")}</div>
+                                    <div class="flow-option-meta">Affection: ${escapeHtml(option.affection || "0")} | 跳转到: ${escapeHtml(option.nextBlockId || "未设置")}</div>
+                                </div>
+                            `).join("")}
+                        </div>
+                    `
+                    : "";
+
+                const noResponseHtml = block.noResponse.nextBlockId || block.noResponse.affection
+                    ? `<span class="badge miss">未回应 -> ${escapeHtml(block.noResponse.nextBlockId || "未设置")} (${escapeHtml(block.noResponse.affection || "0")})</span>`
+                    : "";
+
+                const nextHtml = block.nextBlockId
+                    ? `<span class="badge next">主线 -> ${escapeHtml(block.nextBlockId)}</span>`
+                    : `<span class="badge next">主线结束</span>`;
+
+                card.innerHTML = `
+                    <div class="flow-head">
+                        <div>
+                            <div class="flow-id">${escapeHtml(block.id)}</div>
+                            <div class="node-title">${escapeHtml(title)}</div>
+                        </div>
+                        <div class="flow-kind">${inMainPath ? "主线路径" : "分支节点"}</div>
+                    </div>
+                    <div class="flow-lines">${linesHtml}</div>
+                    <div class="flow-meta">
+                        ${nextHtml}
+                        ${noResponseHtml}
+                        <span class="badge option">选项 ${block.options.length}</span>
+                    </div>
+                    ${optionsHtml}
+                `;
+
+                storyFlowList.appendChild(card);
             });
         }
 
@@ -2078,6 +2654,8 @@ Current in-game copy for `Level0`, organized by block and branch.
         function renderAll() {
             buildGraphMetrics();
             renderOverview();
+            renderDialogueTree();
+            renderStoryFlow();
             renderGraph();
             renderEditor();
             sourceInput.value = state.sourceMarkdown || exportModelToMarkdown(state);
