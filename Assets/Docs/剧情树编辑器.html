@@ -707,7 +707,7 @@
 
             <div class="toolbar-wrap">
                 <div class="toolbar">
-                    <button id="resetSeedButton">恢复内置 Level0 文本</button>
+                    <button id="resetSeedButton">恢复游戏当前 Level0 文本</button>
                     <button id="exportMarkdownButton" class="secondary">导出 Markdown</button>
                     <button id="copyMarkdownButton" class="secondary">复制 Markdown</button>
                     <button id="exportJsonButton" class="secondary">导出 JSON</button>
@@ -1689,7 +1689,7 @@ Current in-game copy for `Level0`, organized by block and branch.
     </script>
 
     <script>
-        const STORAGE_KEY = "level0-dialogue-tree-site-v2";
+        const STORAGE_KEY = "level0-dialogue-tree-site-v3";
 
         const graphStage = document.getElementById("graphStage");
         const graphEdges = document.getElementById("graphEdges");
@@ -1713,8 +1713,6 @@ Current in-game copy for `Level0`, organized by block and branch.
         const noResponseNextInput = document.getElementById("noResponseNextInput");
         const optionsList = document.getElementById("optionsList");
 
-        const seedMarkdown = document.getElementById("seedMarkdown").textContent.trim();
-
         let state = loadState();
         let selectedBlockId = state.order[0] || "";
 
@@ -1732,6 +1730,154 @@ Current in-game copy for `Level0`, organized by block and branch.
             };
         }
 
+        function createLevel0RuntimeModel() {
+            const model = {
+                sourceMarkdown: "",
+                preamble: "# Level 0 Runtime Script\n\nCurrent game dialogue for `Level0`, synced from `DialogueSequenceManager.LoadLevel0PlaceholderData()`.",
+                overview: [
+                    "Source: runtime Level0 data, not docs draft",
+                    "Structure: setup block followed by response block",
+                    "This should match the current in-game passenger conversation"
+                ],
+                tailNotes: "",
+                order: [],
+                blocks: {}
+            };
+
+            function addBlock(id, npcLines, nextBlockId = "") {
+                model.order.push(id);
+                model.blocks[id] = {
+                    id,
+                    title: "",
+                    npcLines,
+                    options: [],
+                    nextBlockId,
+                    noResponse: {
+                        affection: "",
+                        nextBlockId: ""
+                    }
+                };
+            }
+
+            function addResponseBlock(id, options, noResponseAffection, noResponseNextBlockId, responseWindowSeconds = "") {
+                model.order.push(id);
+                model.blocks[id] = {
+                    id,
+                    title: "",
+                    npcLines: [],
+                    options,
+                    nextBlockId: options[0]?.nextBlockId || "",
+                    noResponse: {
+                        affection: String(noResponseAffection),
+                        nextBlockId: noResponseNextBlockId || ""
+                    },
+                    responseWindowSeconds
+                };
+            }
+
+            addBlock("L0_B1_SETUP", [
+                "(Just past eleven at night.)",
+                "(The cab idles at the curb. The rear door opens.)",
+                "(A young girl gets in, closes it quietly, and sets her bag on the seat beside her.)",
+                "(She glances ahead and gives the address.)",
+                "\"Exhibition Center, please.\"",
+                "(A pause. She takes out her phone, checks the screen, puts it away without scrolling.)",
+                "(The cab does not move.)",
+                "\"...You're not saying anything.\"",
+                "(She leans forward slightly, looking toward the front.)",
+                "\"Oh -- I get it. You're the type that needs to pick something.\"",
+                "(She tilts her chin in a vague direction.)",
+                "\"Up and down. Pick one. You don't need to think too hard.\""
+            ], "L0_B1_RESPONSE");
+
+            addResponseBlock("L0_B1_RESPONSE", [
+                { optionId: "L0_B1_A", text: "Sure. Let's go.", affection: "0", nextBlockId: "L0_B1_A_REPLY" },
+                { optionId: "L0_B1_B", text: "Exhibition center this late?", affection: "1", nextBlockId: "L0_B1_B_REPLY" },
+                { optionId: "L0_B1_C", text: "...", affection: "0", nextBlockId: "L0_B1_C_REPLY" }
+            ], -1, "L0_B1_MISS", "0");
+
+            addBlock("L0_B1_A_REPLY", ["(The cab pulls out. The girl settles back.)", "\"Not bad. Quick.\""], "L0_B2_SETUP");
+            addBlock("L0_B1_B_REPLY", ["\"Friend has a show there, it's the last night.\"", "(Short. No elaboration. She turns back to the window.)"], "L0_B2_SETUP");
+            addBlock("L0_B1_C_REPLY", ["\"Silent driver. Noted.\"", "(Said softly, like a memo to herself. She almost smiles.)"], "L0_B2_SETUP");
+            addBlock("L0_B1_MISS", ["(No option selected. The cab moves anyway.)", "(The girl looks ahead. She does not try again.)", "(Her fingers close briefly around her bag strap.)"], "L0_B2_SETUP");
+
+            addBlock("L0_B2_SETUP", [
+                "(Two intersections in.)",
+                "(The girl has been watching the street. Streetlights slide across her face and pass.)",
+                "\"How long have you been driving this route?\"",
+                "(She turns toward the front. This one is a real question.)"
+            ], "L0_B2_RESPONSE");
+
+            addResponseBlock("L0_B2_RESPONSE", [
+                { optionId: "L0_B2_A", text: "Long enough.", affection: "0", nextBlockId: "L0_B2_A_REPLY" },
+                { optionId: "L0_B2_B", text: "Hard to say. Every night, though.", affection: "1", nextBlockId: "L0_B2_B_REPLY" },
+                { optionId: "L0_B2_C", text: "Does it matter?", affection: "1", nextBlockId: "L0_B2_C_REPLY" }
+            ], -1, "L0_B2_MISS");
+
+            addBlock("L0_B2_A_REPLY", ["\"So you must know every shortcut by now.\"", "(She says it like she's confirming something, though she doesn't say what. Her eyes go back to the window.)"], "L0_B3_SETUP");
+            addBlock("L0_B2_B_REPLY", ["\"Every night...\"", "(She repeats it quietly. Something in the words lands differently for her. She looks away.)", "\"Hm.\""], "L0_B3_SETUP");
+            addBlock("L0_B2_C_REPLY", ["(The girl pauses. Then a quiet laugh.)", "\"It matters. I just haven't decided yet.\"", "(She says it like it slipped out. She doesn't walk it back.)"], "L0_B3_SETUP");
+            addBlock("L0_B2_MISS", ["(Countdown ends. No response registered. The girl waits a beat.)", "\"Never mind.\"", "(No irritation. She simply pulls back, like closing a door gently.)"], "L0_B3_SETUP");
+
+            addBlock("L0_B3_SETUP", [
+                "(Red light. The cab stops.)",
+                "(Neon from a shopfront paints a red strip across the window.)",
+                "\"Oh -- by the way.\"",
+                "(Like she just remembered something minor.)",
+                "\"The options -- you can click them too. With the mouse.\"",
+                "(She pauses, aware that sentence sounded a little odd, but she doesn't explain it.)",
+                "\"Just so you know. You don't have to use the keyboard.\"",
+                "(Green light. The cab rolls forward.)",
+                "\"Busy night for you?\""
+            ], "L0_B3_RESPONSE");
+
+            addResponseBlock("L0_B3_RESPONSE", [
+                { optionId: "L0_B3_A", text: "Decent. You're what, the fourth?", affection: "0", nextBlockId: "L0_B3_A_REPLY" },
+                { optionId: "L0_B3_B", text: "Quiet nights have the better passengers.", affection: "1", nextBlockId: "L0_B3_B_SETUP" },
+                { optionId: "L0_B3_C", text: "Not many. Fine by me.", affection: "0", nextBlockId: "L0_B3_C_REPLY" }
+            ], 0, "L0_B3_MISS");
+
+            addBlock("L0_B3_A_REPLY", ["\"The fourth...\"", "(She considers this -- what it means to be someone's fourth stranger of the night. Doesn't say it out loud.)", "\"That's not bad.\""], "L0_B4_SETUP");
+            addBlock("L0_B3_C_REPLY", ["\"Fine by you...\"", "(She nods. Finds the answer reasonable.)", "\"Yeah. I think I prefer fewer people too.\""], "L0_B4_SETUP");
+            addBlock("L0_B3_MISS", ["(The girl doesn't get a response. She makes a small sound of acknowledgment.)", "\"Just asking.\"", "(She turns back to the window. The topic passes.)"], "L0_B4_SETUP");
+
+            addBlock("L0_B3_B_SETUP", ["(The girl looks over.)", "\"Better how?\""], "L0_B3_B_RESPONSE");
+
+            addResponseBlock("L0_B3_B_RESPONSE", [
+                { optionId: "L0_B3_B1", text: "The ones who go quiet halfway through.", affection: "1", nextBlockId: "L0_B3_B1_REPLY" },
+                { optionId: "L0_B3_B2", text: "Hard to say. I know it when I see it.", affection: "1", nextBlockId: "L0_B3_B2_REPLY" }
+            ], 0, "L0_B3_B_MISS");
+
+            addBlock("L0_B3_B1_REPLY", ["(The girl pauses.)", "\"...Does that include me.\"", "(Not quite a question. She seems a little surprised she said it. She turns back to the window.)"], "L0_B4_SETUP");
+            addBlock("L0_B3_B2_REPLY", ["\"That answer...\"", "(A beat.)", "\"Okay. Fair enough.\""], "L0_B4_SETUP");
+            addBlock("L0_B3_B_MISS", ["(The girl waits. She smiles faintly.)", "\"Never mind. I was just asking.\""], "L0_B4_SETUP");
+
+            addBlock("L0_B4_SETUP", [
+                "(The cab turns into the street near the Exhibition Center. A few lights still on in the distance.)",
+                "(The girl glances out, adjusts the strap of her bag.)",
+                "\"Almost there, right?\"",
+                "(She doesn't move to get out. Her hand rests on her bag. She's looking ahead.)",
+                "\"When you can't figure something out -- but you still have to decide --\"",
+                "(She stops. Choosing her words, or deciding whether to say them at all.)",
+                "\"What do you usually do?\""
+            ], "L0_B4_RESPONSE");
+
+            addResponseBlock("L0_B4_RESPONSE", [
+                { optionId: "L0_B4_A", text: "Do it first. Figure it out after.", affection: "1", nextBlockId: "L0_END_WARM" },
+                { optionId: "L0_B4_B", text: "Whichever one you'll regret less.", affection: "1", nextBlockId: "L0_END_NEUTRAL_WARM" },
+                { optionId: "L0_B4_C", text: "Maybe you just pick one.", affection: "0", nextBlockId: "L0_END_NEUTRAL" }
+            ], -2, "L0_END_COLD");
+
+            addBlock("L0_END_WARM", ["(The girl looks at him.)", "\"Do it first...\"", "(She turns the phrase over quietly.)", "\"Okay. Thanks.\"", "(She pushes the door open. Stops for a second. Doesn't look back. Walks toward the Exhibition Center.)"], "END");
+            addBlock("L0_END_NEUTRAL_WARM", ["\"Regret less...\"", "(She repeats it softly, like testing it as a unit of measurement.)", "\"Alright. We're here. Thanks.\"", "(She gets out. Her step is steadier than when she got in.)"], "END");
+            addBlock("L0_END_NEUTRAL", ["\"Maybe you just pick one...\"", "(She nods. Doesn't disagree.)", "\"Yeah. Okay. Thanks.\"", "(She gets out. No pause.)"], "END");
+            addBlock("L0_END_COLD", ["(Timer expires. The cab has stopped.)", "(The girl waits a moment. Then she opens the door.)", "\"Good night.\"", "(She gets out. She doesn't wait for anything. Steady pace.)"], "END");
+
+            const normalized = normalizeModel(model);
+            normalized.sourceMarkdown = exportModelToMarkdown(normalized);
+            return normalized;
+        }
+
         function loadState() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (saved) {
@@ -1744,7 +1890,7 @@ Current in-game copy for `Level0`, organized by block and branch.
                 }
             }
 
-            return parseMarkdownToModel(seedMarkdown);
+            return createLevel0RuntimeModel();
         }
 
         function saveState() {
@@ -1980,6 +2126,19 @@ Current in-game copy for `Level0`, organized by block and branch.
             return path;
         }
 
+        function getAttachedResponseBlock(block) {
+            if (!block || !block.nextBlockId) {
+                return null;
+            }
+
+            const nextBlock = state.blocks[block.nextBlockId];
+            if (!nextBlock) {
+                return null;
+            }
+
+            return nextBlock.options.length > 0 ? nextBlock : null;
+        }
+
         function collectUntilChoice(startId, visited = new Set()) {
             const lead = [];
             let currentId = startId;
@@ -1989,18 +2148,23 @@ Current in-game copy for `Level0`, organized by block and branch.
                 visited.add(currentId);
 
                 if (block.options.length > 0) {
-                    return { lead, question: block };
+                    return { lead, questionEntryId: block.id, responseBlockId: block.id };
+                }
+
+                const attachedResponse = getAttachedResponseBlock(block);
+                if (attachedResponse) {
+                    return { lead, questionEntryId: block.id, responseBlockId: attachedResponse.id };
                 }
 
                 lead.push(block);
                 if (!block.nextBlockId || block.nextBlockId === "END") {
-                    return { lead, question: null };
+                    return { lead, questionEntryId: "", responseBlockId: "" };
                 }
 
                 currentId = block.nextBlockId;
             }
 
-            return { lead, question: null };
+            return { lead, questionEntryId: "", responseBlockId: "" };
         }
 
         function collectLinearBranch(startId, visited = new Set()) {
@@ -2010,20 +2174,25 @@ Current in-game copy for `Level0`, organized by block and branch.
             while (currentId && currentId !== "END" && state.blocks[currentId] && !visited.has(currentId)) {
                 const block = state.blocks[currentId];
                 if (block.options.length > 0) {
-                    return { blocks, nextQuestionId: currentId, ended: false };
+                    return { blocks, nextQuestionId: currentId, nextQuestionEntryId: currentId, ended: false };
+                }
+
+                const attachedResponse = getAttachedResponseBlock(block);
+                if (attachedResponse) {
+                    return { blocks, nextQuestionId: attachedResponse.id, nextQuestionEntryId: block.id, ended: false };
                 }
 
                 visited.add(currentId);
                 blocks.push(block);
 
                 if (!block.nextBlockId || block.nextBlockId === "END") {
-                    return { blocks, nextQuestionId: "", ended: true };
+                    return { blocks, nextQuestionId: "", nextQuestionEntryId: "", ended: true };
                 }
 
                 currentId = block.nextBlockId;
             }
 
-            return { blocks, nextQuestionId: "", ended: true };
+            return { blocks, nextQuestionId: "", nextQuestionEntryId: "", ended: true };
         }
 
         function renderDialogueTree() {
@@ -2034,7 +2203,7 @@ Current in-game copy for `Level0`, organized by block and branch.
             }
 
             const rootId = state.order[0];
-            const { lead, question } = collectUntilChoice(rootId, new Set());
+            const { lead, questionEntryId } = collectUntilChoice(rootId, new Set());
 
             if (lead.length > 0) {
                 const leadCard = document.createElement("div");
@@ -2046,11 +2215,11 @@ Current in-game copy for `Level0`, organized by block and branch.
                 dialogueTreeView.appendChild(leadCard);
             }
 
-            if (!question) {
+            if (!questionEntryId) {
                 return;
             }
 
-            const tree = buildSketchQuestionTree(question.id, new Set(), 0);
+            const tree = buildSketchQuestionTree(questionEntryId, new Set(), 0);
             if (tree) {
                 dialogueTreeView.appendChild(tree);
             }
@@ -2068,7 +2237,12 @@ Current in-game copy for `Level0`, organized by block and branch.
                 return null;
             }
 
-            const question = state.blocks[questionId];
+            const questionEntry = state.blocks[questionId];
+            const responseBlock = questionEntry.options.length > 0 ? questionEntry : getAttachedResponseBlock(questionEntry);
+            if (!responseBlock) {
+                return null;
+            }
+
             const nextVisited = new Set(visitedQuestions);
             nextVisited.add(questionId);
 
@@ -2083,13 +2257,13 @@ Current in-game copy for `Level0`, organized by block and branch.
             });
             node.innerHTML = `
                 <div class="question-label">问句节点</div>
-                <div class="flow-id">${escapeHtml(question.id)}</div>
-                <div class="question-title">${escapeHtml(question.npcLines.join("\n") || question.title || question.id)}</div>
+                <div class="flow-id">${escapeHtml(questionEntry.id)}</div>
+                <div class="question-title">${escapeHtml(questionEntry.npcLines.join("\n") || questionEntry.title || questionEntry.id)}</div>
             `;
             stage.appendChild(node);
 
             const branches = [];
-            question.options.forEach((option) => {
+            responseBlock.options.forEach((option) => {
                 const linear = collectLinearBranch(option.nextBlockId, new Set());
                 branches.push({
                     label: option.text || option.optionId || "未命名选项",
@@ -2101,13 +2275,13 @@ Current in-game copy for `Level0`, organized by block and branch.
                 });
             });
 
-            if (question.noResponse.nextBlockId) {
-                const linear = collectLinearBranch(question.noResponse.nextBlockId, new Set());
+            if (responseBlock.noResponse.nextBlockId) {
+                const linear = collectLinearBranch(responseBlock.noResponse.nextBlockId, new Set());
                 branches.push({
                     label: "未回应",
                     optionId: "NO_RESPONSE",
-                    affection: question.noResponse.affection || "",
-                    startId: question.noResponse.nextBlockId || "",
+                    affection: responseBlock.noResponse.affection || "",
+                    startId: responseBlock.noResponse.nextBlockId || "",
                     isMiss: true,
                     ...linear
                 });
@@ -2150,8 +2324,8 @@ Current in-game copy for `Level0`, organized by block and branch.
 
                 const merge = document.createElement("div");
                 merge.className = "merge-hint";
-                if (branch.nextQuestionId) {
-                    merge.textContent = `汇入下一问句 ${branch.nextQuestionId}`;
+                if (branch.nextQuestionEntryId) {
+                    merge.textContent = `汇入下一问句 ${branch.nextQuestionEntryId}`;
                 } else if (branch.startId === "END" || branch.ended) {
                     merge.textContent = "这条线先到这里";
                 } else {
@@ -2164,7 +2338,7 @@ Current in-game copy for `Level0`, organized by block and branch.
 
             stage.appendChild(branchRow);
 
-            const uniqueNextQuestions = [...new Set(branches.map((branch) => branch.nextQuestionId).filter(Boolean))];
+            const uniqueNextQuestions = [...new Set(branches.map((branch) => branch.nextQuestionEntryId).filter(Boolean))];
             if (uniqueNextQuestions.length > 0) {
                 const followups = document.createElement("div");
                 followups.className = "question-followups";
@@ -2775,7 +2949,7 @@ Current in-game copy for `Level0`, organized by block and branch.
         });
 
         document.getElementById("resetSeedButton").addEventListener("click", () => {
-            state = parseMarkdownToModel(seedMarkdown);
+            state = createLevel0RuntimeModel();
             selectedBlockId = state.order[0] || "";
             syncSourceFromState();
             renderAll();
