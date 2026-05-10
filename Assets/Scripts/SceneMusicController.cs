@@ -13,8 +13,7 @@ public sealed class SceneMusicController : MonoBehaviour
         "Audio/Level0Bgm",
         "Audio/CityOfLove",
         "Audio/ThisHeavyMetal",
-        "Audio/WaltzAFlatMajorOp69No1",
-        "Audio/Hajimi"
+        "Audio/WaltzAFlatMajorOp69No1"
     };
 
     private static SceneMusicController instance;
