@@ -12,6 +12,7 @@ public sealed class DrivingMinigameController : MonoBehaviour
     private const string Level0SceneName = "Level0";
     private const string Level1SceneName = "Level1";
     private const string Level2SceneName = "Level2";
+    private const string Level3SceneName = "Level3";
     private const string FailureMessage = "(The ride breaks off before the conversation can continue.)";
     private const string PlayerCarResourcePath = "Level2UI/PlayerCarBlueUp";
     private const string ObstacleCarResourcePath = "Level2UI/ObstacleCarGreenUp";
@@ -342,7 +343,8 @@ public sealed class DrivingMinigameController : MonoBehaviour
     {
         return string.Equals(sceneName, Level0SceneName, System.StringComparison.OrdinalIgnoreCase) ||
                string.Equals(sceneName, Level1SceneName, System.StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(sceneName, Level2SceneName, System.StringComparison.OrdinalIgnoreCase);
+               string.Equals(sceneName, Level2SceneName, System.StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, Level3SceneName, System.StringComparison.OrdinalIgnoreCase);
     }
 
     private static RectTransform CreatePanel(string objectName, Transform parent, Color color)

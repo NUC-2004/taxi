@@ -54,6 +54,11 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     public float CurrentResponseDurationSeconds { get; private set; }
     public string FailureMessage { get; private set; } = ConversationFailureMessage;
 
+    private void Awake()
+    {
+        EnsureTrafficSignalPrompt();
+    }
+
     private void Start()
     {
         if (blocks.Count == 0)
@@ -390,7 +395,8 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     {
         return string.Equals(loadedSequenceId, "Level0", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(loadedSequenceId, "Level1", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(loadedSequenceId, "Level2", StringComparison.OrdinalIgnoreCase);
+               string.Equals(loadedSequenceId, "Level2", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(loadedSequenceId, "Level3", StringComparison.OrdinalIgnoreCase);
     }
 
     private void EnsureDrivingMinigame()
@@ -404,11 +410,23 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         gameObject.AddComponent<DrivingMinigameController>();
     }
 
+    private void EnsureTrafficSignalPrompt()
+    {
+        if (!string.Equals(SceneManager.GetActiveScene().name, "Level3", StringComparison.OrdinalIgnoreCase) ||
+            GetComponent<TrafficSignalPromptController>() != null)
+        {
+            return;
+        }
+
+        gameObject.AddComponent<TrafficSignalPromptController>();
+    }
+
     private static bool IsDrivingMinigameScene(string sceneName)
     {
         return string.Equals(sceneName, "Level0", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(sceneName, "Level1", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(sceneName, "Level2", StringComparison.OrdinalIgnoreCase);
+               string.Equals(sceneName, "Level2", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, "Level3", StringComparison.OrdinalIgnoreCase);
     }
 
     private void SetPhase(DialoguePhase phase)
@@ -533,6 +551,13 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         {
             loadedSequenceId = "Level2";
             LoadLevel2MargaretData();
+            return;
+        }
+
+        if (string.Equals(sceneName, "Level3", StringComparison.OrdinalIgnoreCase))
+        {
+            loadedSequenceId = "Level3";
+            LoadLevel3OwenData();
             return;
         }
 
@@ -945,6 +970,476 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         blocks.Add(Block("L2_END_HARTWELL", new[] { N("She pauses fully. Looks at the rearview, briefly."), Q("I know."), Q("Thank you for that, too."), N("She gets out. Walks more slowly than before, but no less steadily.") }, "END"));
         blocks.Add(Block("L2_END_GOOD", new[] { N("Her hand pauses on the briefcase strap."), Q("I hope so."), Q("Drive home safely."), N("She gets out and closes the door at her usual pace.") }, "END"));
         blocks.Add(Block("L2_END_MISS", new[] { N("She gives the briefcase one last look, as though making sure she has not left anything behind."), N("Then she steps out. The door closes softly.") }, "END"));
+    }
+
+    private void LoadLevel3OwenData()
+    {
+        blocks.Add(Block(
+            "L3_B1_SETUP",
+            new[]
+            {
+                N("1:17 a.m. Outside the Qinghe Exhibition Center. The main doors are locked now. A side entrance is still open, throwing a narrow strip of white light onto the pavement."),
+                N("Owen comes out backward, balancing two paper tubes under one arm and a flat portfolio case in the other hand. He almost drops the tubes, catches them with his chin, then laughs once at himself."),
+                N("He opens the rear door with some difficulty and gets in with too many objects. The tubes roll against the seat. He gathers them quickly."),
+                Q("Sorry -- sorry. I have, like, four hands worth of things and two hands."),
+                N("He shuts the door with his elbow. One paper tube knocks gently against the glass."),
+                Q("Riverside Studios. The old warehouse ones, near the canal."),
+                N("A beat. He checks the tubes, then the portfolio, then the inside pocket of his coat. His fingers pause there. He does not take anything out."),
+                Q("Long night for you too, huh?"),
+                N("He says it easily, like conversation is something he reaches for before thinking.")
+            },
+            "L3_B1_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L3_B1_RESPONSE",
+            System.Array.Empty<string>(),
+            CreateLevel3Block1Options(),
+            -1,
+            "L3_B1_MISS"));
+
+        blocks.Add(Block(
+            "L3_B1_A_REPLY",
+            new[]
+            {
+                N("Owen looks at the tubes, then the window, then back toward the mirror as if realizing the obvious."),
+                Q("Yeah. Last night of it. We stayed after to take everything down."),
+                N("He says \"last night\" lightly, but the phrase has a small aftertaste.")
+            },
+            "L3_B2_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B1_B_REPLY",
+            new[]
+            {
+                Q("Thanks."),
+                N("He settles the portfolio upright by his knees."),
+                Q("It's not far. Unless the city decides to be weird about traffic at one in the morning, which it does sometimes.")
+            },
+            "L3_B2_SETUP"));
+
+        blocks.Add(Block("L3_B1_C_REPLY", GetLevel3Block1CReplyLines(), "L3_B2_SETUP"));
+        blocks.Add(Block(
+            "L3_B1_MISS",
+            new[]
+            {
+                N("Owen doesn't seem offended. He fills the space himself."),
+                Q("Quiet cab. Okay. That's okay."),
+                N("A beat."),
+                Q("Might be better, actually.")
+            },
+            "L3_B2_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B2_SETUP",
+            new[]
+            {
+                N("The cab pulls away from the Exhibition Center. Through the rear window, the side entrance shrinks to a white rectangle."),
+                N("Owen leans one paper tube against his shoulder, then adjusts it so it doesn't slide."),
+                Q("It was a small show. Not small in a bad way. Small like -- everyone can hear everyone pretending not to be nervous."),
+                N("He laughs quietly."),
+                Q("Photography mostly. Mine was the night series. Long exposures, empty streets, convenience store lights, people walking through frame like ghosts because they wouldn't stand still."),
+                N("He looks out the window. For the first time, he slows down."),
+                Q("There was a board by the exit. People could leave notes. I thought that was a stupid idea when we put it up."),
+                N("He taps his coat pocket once, barely."),
+                Q("It wasn't.")
+            },
+            "L3_B2_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L3_B2_RESPONSE",
+            System.Array.Empty<string>(),
+            CreateLevel3Block2Options(),
+            -1,
+            "L3_B2_MISS"));
+
+        blocks.Add(Block(
+            "L3_B2_A_REPLY",
+            new[]
+            {
+                Q("Mostly normal things."),
+                N("He counts on his fingers."),
+                Q("\"Beautiful light.\" \"Loved the canal photo.\" One person wrote \"too much blue,\" which, fair."),
+                N("He smiles."),
+                Q("And then one note that didn't really belong with the others.")
+            },
+            "L3_B3_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B2_B_REPLY",
+            new[]
+            {
+                Q("Because I thought people would either be polite or clever. Both are useless, mostly."),
+                N("He shifts the portfolio against his knees."),
+                Q("But sometimes people forget to be either. That's when a note gets dangerous.")
+            },
+            "L3_B3_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B2_C_REPLY",
+            new[]
+            {
+                Q("They do. They lie less."),
+                N("A beat."),
+                Q("Or maybe they lie better. I haven't decided.")
+            },
+            "L3_B3_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B2_D_REPLY",
+            new[]
+            {
+                N("Owen looks toward the mirror. The quickness leaves him for a second."),
+                Q("That's a strange thing to guess."),
+                N("He looks down at his coat pocket."),
+                Q("Yeah. I think so.")
+            },
+            "L3_B3_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B2_MISS",
+            new[]
+            {
+                N("Owen nods to himself, as if continuing a conversation that only needed one person."),
+                Q("Anyway, it was a good night. I think."),
+                N("The \"I think\" comes late.")
+            },
+            "L3_B3_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_SETUP",
+            new[]
+            {
+                N("A long road along the back of the shopping district. Most signs are off. A few are still glowing blue-white."),
+                N("Owen takes his phone out, checks it, sees no new messages, puts it away. Then immediately takes it out again and locks the screen."),
+                Q("A girl from school came by tonight. I didn't see her during the show."),
+                N("He says it quickly. Too quickly to be casual."),
+                Q("Or maybe I did and didn't notice. Which is worse, probably."),
+                N("He rubs his thumb along the edge of the phone."),
+                Q("Vera."),
+                N("The name lands plainly. No dramatic sting. Just the missing piece being named because Owen has no reason not to."),
+                Q("She's in Fine Arts. Hartwell. Same year as me."),
+                N("Owen looks out the window."),
+                Q("She left before I found the note.")
+            },
+            "L3_B3_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L3_B3_RESPONSE",
+            System.Array.Empty<string>(),
+            CreateLevel3Block3Options(),
+            -1,
+            "L3_B3_MISS"));
+
+        blocks.Add(Block(
+            "L3_B3_A_REPLY",
+            new[]
+            {
+                Q("No."),
+                N("Immediate. Then softer."),
+                Q("I mean -- I knew she might come. I told her about it. I just didn't think she would."),
+                N("A beat."),
+                Q("That's a stupid thing to admit, maybe.")
+            },
+            "L3_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_B_REPLY",
+            new[]
+            {
+                N("Owen gives a small, helpless laugh."),
+                Q("Because she's Vera."),
+                N("He hears how that sounds and tries again."),
+                Q("Because if she stayed, someone might ask her what she meant.")
+            },
+            "L3_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_C_REPLY",
+            new[]
+            {
+                N("Owen looks up."),
+                Q("Yeah."),
+                N("A short pause."),
+                Q("You know about that?"),
+                N("He doesn't wait for an answer he could reasonably get."),
+                Q("Then you know why tonight felt... weird. Like everyone was taking pictures at a funeral and pretending it was still an opening.")
+            },
+            "L3_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_D_REPLY",
+            new[]
+            {
+                N("Owen turns that over."),
+                Q("Did she."),
+                N("Not a question to the driver. More like he is matching it to something he already suspects."),
+                Q("There is someone she was waiting on, I think. Not me."),
+                N("A beat."),
+                Q("I used to be relieved by that. Tonight it just made me feel late.")
+            },
+            "L3_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_E_REPLY",
+            new[]
+            {
+                N("Owen goes still for half a second."),
+                Q("Yeah."),
+                N("He says it like the thought hurts because it makes sense."),
+                Q("That's the thing. It wasn't hidden. It was just placed where I would only see it when everything was over.")
+            },
+            "L3_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_MISS",
+            new[]
+            {
+                N("Owen exhales. The name remains in the cab anyway."),
+                Q("Anyway. Vera came by."),
+                N("He repeats it as if repetition might make the fact easier to hold.")
+            },
+            "L3_B4_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B4_SETUP",
+            new[]
+            {
+                N("They pass a closed convenience store. Inside, one fluorescent tube flickers above empty aisles. Owen watches it until it disappears."),
+                Q("The board was near the exit. Cork, cheap frame, bad pins. I was going to throw it away after tonight."),
+                N("He slides two fingers into his coat pocket and touches the folded note but still does not remove it."),
+                Q("Her note was folded once. Not like the others. The others were just stuck there flat, like receipts."),
+                N("A pause."),
+                Q("I knew it was hers before I read it."),
+                N("He smiles faintly, but it does not last."),
+                Q("She has this way of making even paper look like it's hesitating.")
+            },
+            "L3_B4_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L3_B4_RESPONSE",
+            System.Array.Empty<string>(),
+            CreateLevel3Block4Options(),
+            -1,
+            "L3_B4_MISS"));
+
+        blocks.Add(Block("L3_B4_A_REPLY", GetLevel3Block4AReplyLines(), "L3_B5_SETUP"));
+        blocks.Add(Block(
+            "L3_B4_B_REPLY",
+            new[]
+            {
+                N("Owen pats his coat pocket once."),
+                Q("Yeah."),
+                N("A beat."),
+                Q("Which is very normal behavior. Keeping folded paper in your coat like evidence."),
+                N("He laughs once, then stops."),
+                Q("I don't know what else to do with it yet.")
+            },
+            "L3_B5_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B4_C_REPLY",
+            new[]
+            {
+                Q("No. Knowing someone doesn't give you the right translation."),
+                N("He says it faster than expected. Then softens."),
+                Q("Sorry. I just -- no. I don't know."),
+                N("A beat."),
+                Q("I know what I hope she meant.")
+            },
+            "L3_B5_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B4_D_REPLY",
+            new[]
+            {
+                N("Owen looks at the mirror. This one lands hard."),
+                Q("Yeah."),
+                N("A long pause."),
+                Q("That's exactly what it felt like. Like the note was the second sentence. Like the first one got lost somewhere before she reached the door.")
+            },
+            "L3_B5_SETUP"));
+
+        blocks.Add(Block("L3_B4_E_REPLY", GetLevel3Block4EReplyLines(), "L3_B5_SETUP"));
+        blocks.Add(Block("L3_B4_F_REPLY", GetLevel3Block4FReplyLines(), "L3_B5_SETUP"));
+        blocks.Add(Block(
+            "L3_B4_MISS",
+            new[]
+            {
+                N("Owen looks at the window. The topic does not disappear, but he carries it alone."),
+                Q("It was just a note. People leave notes."),
+                N("He does not believe this.")
+            },
+            "L3_B5_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B5_SETUP",
+            new[]
+            {
+                N("The cab turns toward the canal road. Water appears between buildings in narrow black strips. The city is quieter here."),
+                N("Owen finally takes the note out. We do not see the full text. It is folded once, as described. He holds it but does not unfold it."),
+                Q("I keep thinking about the part she didn't write."),
+                N("He looks at the folded paper, then folds it again along the same crease."),
+                Q("That's a terrible habit. Reading blank space like it owes you something."),
+                N("A beat."),
+                Q("But there was a lot of blank space."),
+                N("He puts the note on top of the portfolio case. His hand stays over it."),
+                Q("It wasn't a goodbye. I don't think."),
+                N("He waits, and for once he does not immediately fill the silence.")
+            },
+            "L3_B5_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L3_B5_RESPONSE",
+            System.Array.Empty<string>(),
+            CreateLevel3Block5Options(),
+            -2,
+            "L3_B5_MISS",
+            8f));
+
+        blocks.Add(Block("L3_B5_A_REPLY", GetLevel3Block5AReplyLines(), "L3_B6_SETUP"));
+        blocks.Add(Block("L3_B5_B_REPLY", GetLevel3Block5BReplyLines(), "L3_B6_SETUP"));
+        blocks.Add(Block(
+            "L3_B5_C_REPLY",
+            new[]
+            {
+                N("Owen stares at the phone in his hand. He had not realized he picked it up."),
+                Q("I can."),
+                N("A beat."),
+                Q("That's the awful part. I can, which means if I don't, that becomes an answer too.")
+            },
+            "L3_B6_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B5_D_REPLY",
+            new[]
+            {
+                N("Owen does not speak for a moment."),
+                Q("Yeah."),
+                N("The word is quiet."),
+                Q("Not in the show. Not in the school. In her own life, maybe."),
+                N("He looks at the folded note."),
+                Q("She didn't phrase it like that. She wouldn't. But yeah.")
+            },
+            "L3_B6_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B5_E_REPLY",
+            new[]
+            {
+                N("Owen's eyes move to the mirror."),
+                Q("No."),
+                N("A beat."),
+                Q("I don't think she did."),
+                N("He considers whether to say more."),
+                Q("The note mentioned waiting on someone who was better at silence than kindness. Could be anyone, technically."),
+                N("He gives a small humorless smile."),
+                Q("It wasn't anyone.")
+            },
+            "L3_B6_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B5_F_REPLY",
+            new[]
+            {
+                N("Owen looks at the note as if it has changed shape."),
+                Q("That's..."),
+                N("He doesn't finish. Then nods once."),
+                Q("That's probably true."),
+                N("He folds the note carefully and returns it to his pocket, but this time it looks less like hiding.")
+            },
+            "L3_B6_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B5_MISS",
+            new[]
+            {
+                N("Owen waits a little too long. Then fills the space, but more quietly than before."),
+                Q("I didn't think she'd write something like that."),
+                N("He puts the note away."),
+                Q("That's all.")
+            },
+            "L3_B6_SETUP"));
+
+        blocks.Add(Block("L3_B6_SETUP", GetLevel3Block6SetupLines(), "L3_B6_RESPONSE"));
+
+        blocks.Add(ResponseBlock(
+            "L3_B6_RESPONSE",
+            System.Array.Empty<string>(),
+            CreateLevel3Block6Options(),
+            0,
+            null,
+            0f));
+
+        blocks.Add(Block(
+            "L3_END_REPLY",
+            new[]
+            {
+                N("Owen nods slowly."),
+                Q("Write first. Then show up."),
+                N("He repeats it like a plan simple enough to survive morning."),
+                Q("Okay."),
+                N("He opens the door, steps out, then leans back in to collect one forgotten tube."),
+                Q("Thanks.")
+            },
+            "END"));
+
+        blocks.Add(Block(
+            "L3_END_WARMEST",
+            new[]
+            {
+                N("Owen looks at the mirror. The line lands exactly where it needs to."),
+                Q("Yeah."),
+                N("A beat."),
+                Q("Yeah, okay."),
+                N("He gets out, then stands beside the open door for a second, phone in hand. He is not typing yet. But he has stopped delaying.")
+            },
+            "END"));
+
+        blocks.Add(Block(
+            "L3_END_PUSHED",
+            new[]
+            {
+                N("Owen gives a short laugh. Not amused -- caught."),
+                Q("That's mean."),
+                N("A beat."),
+                Q("True, though."),
+                N("He pockets the phone, then immediately takes it out again as he steps onto the curb.")
+            },
+            "END"));
+
+        blocks.Add(Block(
+            "L3_END_GENTLE",
+            new[]
+            {
+                Q("That might be enough."),
+                N("He thinks about it."),
+                Q("Or at least it might be the first honest sentence."),
+                N("He gets out carefully, carrying everything this time.")
+            },
+            "END"));
+
+        blocks.Add(Block(
+            "L3_END_OPEN",
+            new[]
+            {
+                N("Owen looks down at the phone."),
+                Q("I hate when that's true."),
+                N("He smiles. This one stays a little longer."),
+                Q("Goodnight.")
+            },
+            "END"));
+
+        blocks.Add(Block(
+            "L3_END_UNCERTAIN",
+            new[]
+            {
+                N("Owen waits. This time, the silence is not an accident. He nods once, accepting it as an answer of its own."),
+                Q("Yeah."),
+                N("He opens the door."),
+                Q("Goodnight."),
+                N("Outside, he stands under the warehouse light and looks at his phone. The cab pulls away before we see whether he types.")
+            },
+            "END"));
     }
 
     private void LoadLevel1KeywordData()
@@ -1434,6 +1929,432 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             default:
                 return "For some reason, the river road feels quieter.";
         }
+    }
+
+    private List<PlayerResponseOption> CreateLevel3Block1Options()
+    {
+        List<PlayerResponseOption> options = new List<PlayerResponseOption>();
+        if (HasLevel3WarmTone())
+        {
+            options.Add(Option("L3_B1_A_SHOW", "Looks like the show went late.", 1, "L3_B1_A_REPLY"));
+            options.Add(Option("L3_B1_C_LOST", "You almost lost one of those.", 0, "L3_B1_C_REPLY"));
+            options.Add(Option("L3_B1_B_STUDIOS", "Riverside Studios. Got it.", 0, "L3_B1_B_REPLY"));
+        }
+        else
+        {
+            options.Add(Option("L3_B1_B_STUDIOS", "Riverside Studios. Got it.", 0, "L3_B1_B_REPLY"));
+            options.Add(Option("L3_B1_C_LOST", "You almost lost one of those.", 0, "L3_B1_C_REPLY"));
+            options.Add(Option("L3_B1_A_SHOW", "Looks like the show went late.", 1, "L3_B1_A_REPLY"));
+        }
+
+        options.Add(Option("L3_B1_SILENCE", "...", -1, "L3_B1_MISS"));
+        return options;
+    }
+
+    private List<PlayerResponseOption> CreateLevel3Block2Options()
+    {
+        List<PlayerResponseOption> options = new List<PlayerResponseOption>();
+        bool earlyDynamic = HasLevel3WarmTone() || HasLevel3StrongListeningProfile();
+        if (earlyDynamic)
+        {
+            options.Add(Option("L3_B2_D_IMPORTANT", "Someone left you something important.", 2, "L3_B2_D_REPLY", unlocked: true));
+        }
+
+        options.Add(Option("L3_B2_A_WROTE", "People wrote things?", 1, "L3_B2_A_REPLY"));
+        options.Add(Option("L3_B2_B_STUPID", "Why did you think it was stupid?", 1, "L3_B2_B_REPLY"));
+        options.Add(Option("L3_B2_C_STREETS", "Night streets make good photographs.", 0, "L3_B2_C_REPLY"));
+
+        if (!earlyDynamic && HasLevel3MediumListeningProfile())
+        {
+            options.Add(Option("L3_B2_D_IMPORTANT", "Someone left you something important.", 2, "L3_B2_D_REPLY", unlocked: true));
+        }
+
+        options.Add(Option("L3_B2_SILENCE", "...", -1, "L3_B2_MISS"));
+        return options;
+    }
+
+    private List<PlayerResponseOption> CreateLevel3Block3Options()
+    {
+        List<PlayerResponseOption> options = new List<PlayerResponseOption>
+        {
+            Option("L3_B3_A_NOTICED", "You didn't know she was there?", 1, "L3_B3_A_REPLY"),
+            Option("L3_B3_B_WAIT", "Why wouldn't she wait?", 1, "L3_B3_B_REPLY")
+        };
+
+        if (HasHartwellRecognition())
+        {
+            options.Add(Option("L3_B3_C_HARTWELL", "Hartwell. The Fine Arts department.", 2, "L3_B3_C_REPLY", keyword: true));
+        }
+
+        if (HasDanielRecognitionChain())
+        {
+            options.Add(Option("L3_B3_D_QUIET", "She mentioned someone had been quiet.", 2, "L3_B3_D_REPLY", keyword: true));
+        }
+
+        if (HasLevel3StrongListeningProfile() || HasLevel3WarmTone())
+        {
+            options.Add(Option("L3_B3_E_AFTER", "Maybe she wanted you to find it after.", 2, "L3_B3_E_REPLY", unlocked: true));
+        }
+
+        options.Add(Option("L3_B3_SILENCE", "...", -1, "L3_B3_MISS"));
+        return options;
+    }
+
+    private List<PlayerResponseOption> CreateLevel3Block4Options()
+    {
+        List<PlayerResponseOption> options = new List<PlayerResponseOption>
+        {
+            Option("L3_B4_A_WHAT", "What did it say?", 1, "L3_B4_A_REPLY"),
+            Option("L3_B4_B_KEPT", "You kept it.", 0, "L3_B4_B_REPLY"),
+            Option("L3_B4_C_MEANT", "If you knew it was hers, you must know what she meant.", 1, "L3_B4_C_REPLY")
+        };
+
+        if (HasMargaretLostWords())
+        {
+            options.Add(Option("L3_B4_D_FIRST", "She'd been trying to say something else first.", 2, "L3_B4_D_REPLY", keyword: true));
+        }
+
+        if (HasMargaretEntryChain())
+        {
+            options.Add(Option("L3_B4_E_ENTRY", "Someone submitted her work for her, didn't they?", 2, "L3_B4_E_REPLY", keyword: true));
+        }
+
+        if (HasLevel3StrongListeningProfile())
+        {
+            options.Add(Option("L3_B4_F_ANSWER", "Maybe she wanted someone to answer without making her ask.", 3, "L3_B4_F_REPLY", unlocked: true, requiredAffection: 7));
+        }
+
+        options.Add(Option("L3_B4_SILENCE", "...", -1, "L3_B4_MISS"));
+        return options;
+    }
+
+    private List<PlayerResponseOption> CreateLevel3Block5Options()
+    {
+        List<PlayerResponseOption> options = new List<PlayerResponseOption>();
+
+        if (HasLevel3StrongListeningProfile())
+        {
+            options.Add(Option("L3_B5_D_ROOM", "She was asking whether there was still room for her.", 3, "L3_B5_D_REPLY", unlocked: true, requiredAffection: 7));
+        }
+
+        options.Add(Option("L3_B5_A_THEN", "Then what was it?", 1, "L3_B5_A_REPLY"));
+        options.Add(Option("L3_B5_B_SELF", "Maybe it was for herself more than for you.", 1, "L3_B5_B_REPLY"));
+        options.Add(Option("L3_B5_C_ANSWER", "If it wasn't goodbye, you can still answer.", 2, "L3_B5_C_REPLY"));
+
+        if (!HasLevel3StrongListeningProfile() && HasVeraIncludeQuestion())
+        {
+            options.Add(Option("L3_B5_D_ROOM", "She was asking whether there was still room for her.", 3, "L3_B5_D_REPLY", unlocked: true, requiredAffection: 7));
+        }
+
+        if (HasDanielRecognitionChain() && HasHartwellRecognition())
+        {
+            options.Add(Option("L3_B5_E_DANIEL", "She didn't go to Daniel.", 2, "L3_B5_E_REPLY", keyword: true));
+        }
+
+        if (HasLevel3StrongListeningProfile() || HasMargaretLostWords())
+        {
+            options.Add(Option("L3_B5_F_BLANK", "Maybe the blank space was the part she wanted answered.", 3, "L3_B5_F_REPLY", unlocked: true, requiredOptionId: "L3_B4_D_FIRST"));
+        }
+
+        options.Add(Option("L3_B5_SILENCE", "...", -2, "L3_B5_MISS"));
+        return options;
+    }
+
+    private List<PlayerResponseOption> CreateLevel3Block6Options()
+    {
+        List<PlayerResponseOption> options = new List<PlayerResponseOption>();
+        if (HasLevel3StrongListeningProfile())
+        {
+            options.Add(Option("L3_B6_B_TWICE", "Don't make her ask twice.", 2, "L3_END_WARMEST", unlocked: true, requiredAffection: 7));
+        }
+
+        options.Add(Option("L3_B6_A_WRITE", "Write first. Then show up.", 1, "L3_END_REPLY"));
+        options.Add(Option("L3_B6_C_WAIT", "If you wait, that's an answer too.", 1, "L3_END_PUSHED"));
+        options.Add(Option("L3_B6_D_SAW", "Maybe just tell her you saw it.", 0, "L3_END_GENTLE"));
+        options.Add(Option("L3_B6_E_KNOW", "You already know what to do.", 0, "L3_END_OPEN"));
+        options.Add(Option("L3_B6_SILENCE", "...", -1, "L3_END_UNCERTAIN"));
+        return options;
+    }
+
+    private string[] GetLevel3Block1CReplyLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Owen glances at the paper tube nearest the door."),
+            Q("Story of my life. Almost losing things, then pretending that was the plan."),
+            N("He smiles at that, then stops smiling a little too quickly.")
+        };
+
+        if (HasVeraIncludeQuestion())
+        {
+            lines.Add(Q("Someone asked me once if almost counted. I said probably. Terrible answer."));
+        }
+
+        return lines.ToArray();
+    }
+
+    private string[] GetLevel3Block4AReplyLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Owen's hand stays in his pocket."),
+            Q("Not exactly something you can read out loud in a cab."),
+            N("He tries to smile. It doesn't quite work."),
+            Q("Not because it was private. Because reading it out loud would make it smaller.")
+        };
+
+        if (HasLevel3MediumListeningProfile())
+        {
+            lines.Add(Q("It sounded like someone deciding to stop apologizing for taking up space."));
+        }
+
+        return lines.ToArray();
+    }
+
+    private string[] GetLevel3Block4EReplyLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Owen's expression changes -- surprise, then recognition."),
+            Q("I heard that after."),
+            N("He looks down at the portfolio case."),
+            Q("The entry list had her name on it. She told everyone she hadn't decided yet. But her name was there.")
+        };
+
+        if (StorySessionState.HasSelectedOption("L2_B4_G_COST"))
+        {
+            lines.Add(Q("Margaret must have taken a hit for that. Maybe not publicly. But rooms like that keep score."));
+        }
+
+        return lines.ToArray();
+    }
+
+    private string[] GetLevel3Block4FReplyLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Owen's hand closes around the note in his pocket."),
+            Q("That's unfairly accurate."),
+            N("A beat."),
+            Q("She does that. Stands near a question and waits to see if anyone notices the shape of it.")
+        };
+
+        if (HasVeraIncludeQuestion())
+        {
+            lines.Add(Q("She asked me something like that once. Not the words. The shape."));
+        }
+
+        return lines.ToArray();
+    }
+
+    private string[] GetLevel3Block5AReplyLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Owen exhales."),
+            Q("Maybe a marker. Like when you leave a light on in a room so you can come back to it.")
+        };
+
+        lines.Add(Q(GetLevel3ToneMeaningLine()));
+        return lines.ToArray();
+    }
+
+    private string[] GetLevel3Block5BReplyLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Owen looks at the note."),
+            Q("Yeah. Maybe."),
+            N("He smiles faintly."),
+            Q("That would be very Vera. Give someone a message so she doesn't have to say it to a mirror.")
+        };
+
+        if (StorySessionState.HasSelectedOption("L3_B3_E_AFTER"))
+        {
+            lines.Add(Q("But she still put it where I would find it. So not just for herself."));
+        }
+
+        return lines.ToArray();
+    }
+
+    private string[] GetLevel3Block6SetupLines()
+    {
+        List<string> lines = new List<string>
+        {
+            N("Riverside Studios. The old warehouses sit low along the canal. A single upstairs window is lit in one of them."),
+            N("The cab stops. Owen gathers the paper tubes first, then forgets the portfolio, then remembers it. He laughs under his breath."),
+            Q("Right. This is me."),
+            N("He does not open the door yet. The note is back in his coat pocket. His phone is in his other hand.")
+        };
+
+        if (HasDanielPrompted())
+        {
+            lines.Add(N("His phone vibrates once. He glances at it. The screen is not shown clearly. His expression changes only slightly -- recognition mixed with disbelief. He does not explain."));
+        }
+
+        if (HasMargaretPromised())
+        {
+            lines.Add(Q("Someone came by the next day, actually. Margaret. She didn't stay long."));
+            lines.Add(N("A beat."));
+            lines.Add(Q("She said Vera's name like it cost her something and helped her anyway."));
+        }
+        else if (HasMargaretQuietDeparture())
+        {
+            lines.Add(Q("I keep thinking there were people around her who knew more than they said."));
+            lines.Add(N("He looks out at the warehouse window."));
+            lines.Add(Q("Maybe that's everyone."));
+        }
+
+        lines.Add(Q("I think I'm going to write back."));
+        lines.Add(N("He smiles faintly, nervous."));
+        lines.Add(Q("Or call. Calling feels insane. Writing feels cowardly. Showing up feels like something from a movie where people have better lighting."));
+        lines.Add(N("He looks toward the mirror."));
+        lines.Add(Q("What would you do?"));
+        return lines.ToArray();
+    }
+
+    private string GetLevel3ToneMeaningLine()
+    {
+        switch (StorySessionState.Tone)
+        {
+            case "WARM":
+                return "She wrote like someone who had decided to try, but didn't trust the decision enough to announce it.";
+            case "NEUTRAL_WARM":
+                return "She wrote like someone who had almost decided. Which, for Vera, might be the same as deciding.";
+            case "COLD":
+                return "She wrote like someone leaving before anyone could stop her. Or ask her to stay.";
+            case "NEUTRAL":
+            default:
+                return "She wrote like someone who came by. That's all I know for sure.";
+        }
+    }
+
+    private bool HasLevel3WarmTone()
+    {
+        return string.Equals(StorySessionState.Tone, "WARM", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(StorySessionState.Tone, "NEUTRAL_WARM", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private int GetLevel3ListeningScore()
+    {
+        int score = 0;
+        switch (StorySessionState.Tone)
+        {
+            case "WARM":
+                score += 3;
+                break;
+            case "NEUTRAL_WARM":
+                score += 2;
+                break;
+            case "NEUTRAL":
+                score += 1;
+                break;
+        }
+
+        score += CountSelectedOptions(
+            "L0_B3_B1",
+            "L1_B2_B_MADE",
+            "L1_B3_B_TEACH",
+            "L1_B3_C_LIKE",
+            "L1_B4_D_PROTECT",
+            "L1_B5_B_WORK",
+            "L1_B6_C_WRITE",
+            "L2_B2_A_STUDENT",
+            "L2_B3_D_SOMEONE",
+            "L2_B4_D_KNOWN",
+            "L2_B4_E_HARTWELL",
+            "L2_B4_G_COST",
+            "L2_B5_E_ANSWER",
+            "L2_B6_A_TELL");
+
+        if (!StorySessionState.WasBlockMissed("L1_B5_RESPONSE"))
+        {
+            score++;
+        }
+
+        if (!StorySessionState.WasBlockMissed("L2_B5_RESPONSE"))
+        {
+            score++;
+        }
+
+        return score;
+    }
+
+    private bool HasLevel3MediumListeningProfile()
+    {
+        return GetLevel3ListeningScore() >= 4;
+    }
+
+    private bool HasLevel3StrongListeningProfile()
+    {
+        return GetLevel3ListeningScore() >= 7;
+    }
+
+    private bool HasVeraIncludeQuestion()
+    {
+        return StorySessionState.HasSelectedOption("L0_B3_B1");
+    }
+
+    private bool HasHartwellRecognition()
+    {
+        return HasAnySelectedOption("L1_B4_D_PROTECT", "L2_B4_E_HARTWELL", "L2_B6_D_HARTWELL");
+    }
+
+    private bool HasDanielRecognitionChain()
+    {
+        return HasAnySelectedOption("L1_B5_B_WORK", "L1_B5_D_ARETHEY", "L1_B6_C_WRITE", "L1_B4_D_PROTECT");
+    }
+
+    private bool HasDanielPrompted()
+    {
+        return HasAnySelectedOption("L1_B5_C_WAITING", "L1_B5_B_WORK", "L1_B6_C_WRITE");
+    }
+
+    private bool HasMargaretLostWords()
+    {
+        return HasAnySelectedOption("L2_B3_A_UNSAID", "L2_B3_D_SOMEONE", "L2_B5_E_ANSWER");
+    }
+
+    private bool HasMargaretEntryChain()
+    {
+        return HasAnySelectedOption("L2_B2_A_STUDENT", "L2_B4_E_HARTWELL", "L2_B4_F_TONIGHT", "L2_B4_G_COST");
+    }
+
+    private bool HasMargaretPromised()
+    {
+        return HasAnySelectedOption("L2_B5_B_STILL", "L2_B5_D_MEANT", "L2_B6_A_TELL");
+    }
+
+    private bool HasMargaretQuietDeparture()
+    {
+        return HasAnySelectedOption("L2_B6_B_REST", "L2_B6_C_GOODNIGHT");
+    }
+
+    private static bool HasAnySelectedOption(params string[] optionIds)
+    {
+        for (int i = 0; i < optionIds.Length; i++)
+        {
+            if (StorySessionState.HasSelectedOption(optionIds[i]))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int CountSelectedOptions(params string[] optionIds)
+    {
+        int count = 0;
+        for (int i = 0; i < optionIds.Length; i++)
+        {
+            if (StorySessionState.HasSelectedOption(optionIds[i]))
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private static NpcSpeakingBlock Block(string blockId, params string[] lines)

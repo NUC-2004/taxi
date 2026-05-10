@@ -55,9 +55,10 @@ public sealed class MainMenuController : MonoBehaviour
 
     public void OpenLevelSelect()
     {
+        EnsureLevel3RouteButton();
         SetPanelState(levelSelectPanel, true);
         SetPanelState(settingsPanel, false);
-        SetStatus("Route table opened. Level 0 is live; the others are waiting for their passengers.");
+        SetStatus("Route table opened. Four late-night fares are available on the board.");
     }
 
     public void OpenSettings()
@@ -86,6 +87,9 @@ public sealed class MainMenuController : MonoBehaviour
                 break;
             case "ROUTE_2":
                 SceneManager.LoadScene("Level2");
+                break;
+            case "ROUTE_3":
+                SceneManager.LoadScene("Level3");
                 break;
             default:
                 SetStatus("That route is reserved for a later passenger.");
@@ -266,6 +270,9 @@ public sealed class MainMenuController : MonoBehaviour
             case "Level 2  Highway Focus":
             case "Route 2  Reserved":
                 return MainMenuButtonAction.ActionType.LaunchRoute2;
+            case "Level 3  Beihai Park Finale":
+            case "Route 3  Reserved":
+                return MainMenuButtonAction.ActionType.LaunchRoute3;
             case "Controls Placeholder":
                 return MainMenuButtonAction.ActionType.OpenControls;
             case "Close":
@@ -436,7 +443,7 @@ public sealed class MainMenuController : MonoBehaviour
         title.color = SoftIvory;
         Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -54f), new Vector2(-28f, -8f));
 
-        Text desc = CreateText("Level Desc", panel, "Night routes open as passengers arrive. The first office route is now taking fares.", 22, TextAnchor.UpperLeft);
+        Text desc = CreateText("Level Desc", panel, "Night routes open as passengers arrive. The Beihai Park finale is now listed on the board.", 22, TextAnchor.UpperLeft);
         desc.horizontalOverflow = HorizontalWrapMode.Wrap;
         desc.verticalOverflow = VerticalWrapMode.Overflow;
         desc.color = new Color(0.83f, 0.85f, 0.86f, 1f);
@@ -450,6 +457,9 @@ public sealed class MainMenuController : MonoBehaviour
 
         Button futureRouteB = CreatePanelButton("Level 2  Highway Focus", panel, MainMenuButtonAction.ActionType.LaunchRoute2);
         Stretch(futureRouteB.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -426f), new Vector2(-28f, -346f));
+
+        Button futureRouteC = CreatePanelButton("Level 3  Beihai Park Finale", panel, MainMenuButtonAction.ActionType.LaunchRoute3);
+        Stretch(futureRouteC.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -518f), new Vector2(-28f, -438f));
 
         Button closeButton = CreatePanelButton("Close", panel, MainMenuButtonAction.ActionType.ClosePanels);
         Stretch(closeButton.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(28f, 22f), new Vector2(-28f, 86f));
@@ -612,6 +622,34 @@ public sealed class MainMenuController : MonoBehaviour
         Stretch(line.rectTransform, new Vector2(x, y), new Vector2(x, y), new Vector2(0f, -height), new Vector2(3f, 0f));
         line.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 10f);
     }
+
+    private void EnsureLevel3RouteButton()
+    {
+        if (levelSelectPanel == null)
+        {
+            return;
+        }
+
+        if (levelSelectPanel.Find("Level 3  Beihai Park Finale Button") != null)
+        {
+            return;
+        }
+
+        Button route3Button = CreatePanelButton("Level 3  Beihai Park Finale", levelSelectPanel, MainMenuButtonAction.ActionType.LaunchRoute3);
+        RectTransform rect = route3Button.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(1f, 1f);
+        rect.anchoredPosition = new Vector2(0f, -478f);
+        rect.sizeDelta = new Vector2(-56f, 80f);
+
+        Transform closeButton = levelSelectPanel.Find("Close Button");
+        if (closeButton != null)
+        {
+            closeButton.SetAsLastSibling();
+        }
+
+        RebindButtonsInHierarchy();
+    }
 }
 
 public sealed class MainMenuButtonAction : MonoBehaviour
@@ -626,7 +664,8 @@ public sealed class MainMenuButtonAction : MonoBehaviour
         OpenControls,
         LaunchLevel0,
         LaunchRoute1,
-        LaunchRoute2
+        LaunchRoute2,
+        LaunchRoute3
     }
 
     [SerializeField] private ActionType actionType;
@@ -702,6 +741,10 @@ public sealed class MainMenuButtonAction : MonoBehaviour
             case ActionType.LaunchRoute2:
                 controller.LaunchLevelById("ROUTE_2");
                 break;
+            case ActionType.LaunchRoute3:
+                controller.LaunchLevelById("ROUTE_3");
+                break;
         }
     }
+
 }

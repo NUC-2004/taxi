@@ -1086,7 +1086,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         }
 
         string sceneName = SceneManager.GetActiveScene().name;
-        if (sceneName == "Level0" || sceneName == "Level1" || sceneName == "Level2")
+        if (sceneName == "Level0" || sceneName == "Level1" || sceneName == "Level2" || sceneName == "Level3")
         {
             ShowCompletionMenu();
         }
@@ -1396,6 +1396,8 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         switch (SceneManager.GetActiveScene().name)
         {
+            case "Level3":
+                return "Level 3 Complete";
             case "Level2":
                 return "Level 2 Complete";
             case "Level1":
@@ -1410,8 +1412,10 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         switch (SceneManager.GetActiveScene().name)
         {
+            case "Level3":
+                return "Owen is out of the cab. The canal road is quiet again.";
             case "Level2":
-                return "Daniel is gone. The shift can return to the route table.";
+                return "Margaret is gone. The next route is waiting at the canal.";
             case "Level1":
                 return "Daniel is gone. The next route is ready.";
             case "Level0":
@@ -1424,8 +1428,10 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         switch (SceneManager.GetActiveScene().name)
         {
-            case "Level2":
+            case "Level3":
                 return "Return to Main Menu";
+            case "Level2":
+                return "Continue to Level 3";
             case "Level1":
                 return "Continue to Level 2";
             case "Level0":
@@ -1494,6 +1500,9 @@ public sealed class DialogueUILayer : MonoBehaviour
                 SceneManager.LoadScene("Level2");
                 break;
             case "Level2":
+                SceneManager.LoadScene("Level3");
+                break;
+            case "Level3":
                 SceneManager.LoadScene("SampleScene");
                 break;
             default:
@@ -1730,6 +1739,28 @@ public sealed class DialogueUILayer : MonoBehaviour
     {
         if (expressionImage == null)
         {
+            return;
+        }
+
+        bool hasExpressionPaths =
+            !string.IsNullOrWhiteSpace(calmExpressionResourcePath) ||
+            !string.IsNullOrWhiteSpace(happyExpressionResourcePath) ||
+            !string.IsNullOrWhiteSpace(angryExpressionResourcePath);
+
+        if (expressionPanelRoot != null)
+        {
+            expressionPanelRoot.gameObject.SetActive(hasExpressionPaths);
+        }
+
+        if (!hasExpressionPaths)
+        {
+            expressionImage.sprite = null;
+            expressionImage.enabled = false;
+            if (expressionFallbackText != null)
+            {
+                expressionFallbackText.gameObject.SetActive(false);
+            }
+
             return;
         }
 
