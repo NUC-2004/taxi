@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
 
 public sealed class SceneMusicController : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public sealed class SceneMusicController : MonoBehaviour
     };
 
     private static SceneMusicController instance;
+    public static event Action<string> TrackChanged;
 
     private AudioSource musicSource;
     private int currentTrackIndex;
@@ -49,7 +51,7 @@ public sealed class SceneMusicController : MonoBehaviour
         musicSource = gameObject.AddComponent<AudioSource>();
         musicSource.loop = true;
         musicSource.playOnAwake = false;
-        musicSource.volume = 0.5f;
+        musicSource.volume = 0.375f;
 
         SceneManager.sceneLoaded += OnSceneLoaded;
         ApplyMusicForScene(SceneManager.GetActiveScene());
@@ -105,6 +107,49 @@ public sealed class SceneMusicController : MonoBehaviour
         instance.PlayTrack(nextIndex);
     }
 
+    public static bool PlayTrackByResourcePath(string resourcePath)
+    {
+        if (instance == null || string.IsNullOrWhiteSpace(resourcePath))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < MusicPlaylist.Length; i++)
+        {
+            if (!string.Equals(MusicPlaylist[i], resourcePath, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            instance.manualPlaylistMode = true;
+            instance.PlayTrack(i);
+            return true;
+        }
+
+        Debug.LogWarning($"[SceneMusicController] Requested track not found in playlist: {resourcePath}");
+        return false;
+    }
+
+    public static string GetCurrentTrackResourcePath()
+    {
+        if (instance == null ||
+            instance.currentTrackIndex < 0 ||
+            instance.currentTrackIndex >= MusicPlaylist.Length ||
+            instance.musicSource == null ||
+            instance.musicSource.clip == null)
+        {
+            return string.Empty;
+        }
+
+        return MusicPlaylist[instance.currentTrackIndex];
+    }
+
+    public static bool IsCurrentTrack(string resourcePath)
+    {
+        return !string.IsNullOrWhiteSpace(resourcePath) &&
+               string.Equals(GetCurrentTrackResourcePath(), resourcePath, StringComparison.Ordinal);
+    }
+
     private void PlayTrack(int trackIndex)
     {
         if (trackIndex < 0 || trackIndex >= MusicPlaylist.Length)
@@ -127,6 +172,7 @@ public sealed class SceneMusicController : MonoBehaviour
             currentTrackIndex = trackIndex;
             musicSource.clip = clip;
             musicSource.Play();
+            TrackChanged?.Invoke(resourcePath);
             Debug.Log($"[SceneMusicController] Now playing: {clip.name} (index {trackIndex}).");
             return;
         }
@@ -135,6 +181,7 @@ public sealed class SceneMusicController : MonoBehaviour
         if (!musicSource.isPlaying)
         {
             musicSource.Play();
+            TrackChanged?.Invoke(resourcePath);
             Debug.Log($"[SceneMusicController] Resumed: {clip.name} (index {trackIndex}).");
         }
     }

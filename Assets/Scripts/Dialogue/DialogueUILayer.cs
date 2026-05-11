@@ -67,6 +67,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private RectTransform timerRightFill;
     private RectTransform optionsRoot;
     private RectTransform musicNextButtonRoot;
+    private RectTransform musicNextButtonHighlightRoot;
     private RectTransform pauseMenuRoot;
     private RectTransform completionMenuRoot;
     private Image windowBackgroundImage;
@@ -85,6 +86,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private int currentAffectionValue;
     private bool hasSeenAffectionValue;
     private ExpressionMood currentExpressionMood = ExpressionMood.Calm;
+    private DialogueMusicGateController dialogueMusicGateController;
 
     public void Initialize(DialogueSequenceManager manager)
     {
@@ -121,10 +123,12 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         if (isPaused)
         {
+            UpdateMusicNextButtonHighlightVisual();
             return;
         }
 
         SyncResponsePanelVisibility();
+        UpdateMusicNextButtonHighlightVisual();
         if (TryHandleMusicNextButtonClick())
         {
             return;
@@ -493,11 +497,13 @@ public sealed class DialogueUILayer : MonoBehaviour
             "Level0 Dialogue Canvas/NPC Dialogue Area/Options Root",
             "Level0 Dialogue Canvas/Player Response Area/Options Root");
         musicNextButtonRoot = FindRect("Level0 Dialogue Canvas/Music Next Button");
+        musicNextButtonHighlightRoot = FindRect("Level0 Dialogue Canvas/Music Next Button/Highlight Border");
         tutorialText = FindText("Level0 Dialogue Canvas/Tutorial Area/Tutorial Text");
         pauseMenuRoot = FindRect("Level0 Dialogue Canvas/Pause Overlay");
         completionMenuRoot = FindRect("Level0 Dialogue Canvas/Completion Overlay");
         expressionImage = FindRect("Level0 Dialogue Canvas/Expression Area/Expression Image")?.GetComponent<Image>();
         expressionFallbackText = FindText("Level0 Dialogue Canvas/Expression Area/Expression Fallback");
+        dialogueMusicGateController = GetComponent<DialogueMusicGateController>();
     }
 
     private void EnsureCompletionMenuExists()
@@ -684,6 +690,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         if (musicNextButtonRoot != null)
         {
             EnsureMusicNextButtonOnTop();
+            EnsureMusicNextButtonHighlightExists();
             BindMusicNextButton(musicNextButtonRoot.GetComponent<Button>());
             RefreshMusicNextButtonDebugVisual();
             musicNextButtonRoot.SetAsLastSibling();
@@ -698,6 +705,7 @@ public sealed class DialogueUILayer : MonoBehaviour
 
         musicNextButtonRoot = CreateMusicNextButton(canvas.GetComponent<RectTransform>()).GetComponent<RectTransform>();
         EnsureMusicNextButtonOnTop();
+        EnsureMusicNextButtonHighlightExists();
         RefreshMusicNextButtonDebugVisual();
         musicNextButtonRoot.SetAsLastSibling();
     }
@@ -803,6 +811,90 @@ public sealed class DialogueUILayer : MonoBehaviour
         image.color = showMusicNextButtonDebugOverlay
             ? new Color(0.2f, 0.9f, 1f, 0.18f)
             : new Color(1f, 1f, 1f, 0.001f);
+    }
+
+    private void EnsureMusicNextButtonHighlightExists()
+    {
+        if (musicNextButtonRoot == null)
+        {
+            return;
+        }
+
+        if (musicNextButtonHighlightRoot == null)
+        {
+            musicNextButtonHighlightRoot = musicNextButtonRoot.Find("Highlight Border") as RectTransform;
+        }
+
+        if (musicNextButtonHighlightRoot == null)
+        {
+            musicNextButtonHighlightRoot = CreatePanel("Highlight Border", musicNextButtonRoot, new Color(0f, 0f, 0f, 0f));
+
+            Image top = CreateImage("Top", musicNextButtonHighlightRoot, Color.white);
+            Stretch(top.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -4f), Vector2.zero);
+
+            Image bottom = CreateImage("Bottom", musicNextButtonHighlightRoot, Color.white);
+            Stretch(bottom.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, 4f));
+
+            Image left = CreateImage("Left", musicNextButtonHighlightRoot, Color.white);
+            Stretch(left.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(4f, 0f));
+
+            Image right = CreateImage("Right", musicNextButtonHighlightRoot, Color.white);
+            Stretch(right.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-4f, 0f), Vector2.zero);
+        }
+
+        Stretch(musicNextButtonHighlightRoot, new Vector2(-0.16f, -0.48f), new Vector2(0.86f, 0.80f), Vector2.zero, Vector2.zero);
+
+        Graphic[] graphics = musicNextButtonHighlightRoot.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+        {
+            graphics[i].raycastTarget = false;
+        }
+
+        musicNextButtonHighlightRoot.SetAsLastSibling();
+    }
+
+    private void UpdateMusicNextButtonHighlightVisual()
+    {
+        if (dialogueMusicGateController == null)
+        {
+            dialogueMusicGateController = GetComponent<DialogueMusicGateController>();
+        }
+
+        if (musicNextButtonRoot == null)
+        {
+            return;
+        }
+
+        EnsureMusicNextButtonHighlightExists();
+        if (musicNextButtonHighlightRoot == null)
+        {
+            return;
+        }
+
+        bool shouldHighlight = dialogueMusicGateController != null && dialogueMusicGateController.IsAwaitingRequiredTrack;
+        if (musicNextButtonHighlightRoot.gameObject.activeSelf != shouldHighlight)
+        {
+            musicNextButtonHighlightRoot.gameObject.SetActive(shouldHighlight);
+        }
+
+        if (!shouldHighlight)
+        {
+            return;
+        }
+
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6.5f);
+        Color borderColor = new Color(1f, 1f, 1f, Mathf.Lerp(0.28f, 1f, pulse));
+        Image[] borderImages = musicNextButtonHighlightRoot.GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < borderImages.Length; i++)
+        {
+            if (borderImages[i].rectTransform == musicNextButtonHighlightRoot)
+            {
+                borderImages[i].color = new Color(0f, 0f, 0f, 0f);
+                continue;
+            }
+
+            borderImages[i].color = borderColor;
+        }
     }
 
     private void HideResponseQuestion()

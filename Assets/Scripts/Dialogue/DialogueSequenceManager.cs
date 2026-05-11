@@ -35,9 +35,11 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     private bool npcAdvanceRequested;
     private bool typewriterSkipRequested;
     private bool isTypewriterPlaying;
+    private bool npcAdvanceLocked;
 
     public event Action<DialoguePhase> PhaseChanged;
     public event Action<NpcSpeakingBlock, int, int> BlockChanged;
+    public event Action<NpcSpeakingBlock, int, int> NpcFragmentPresented;
     public event Action<string> NpcTextChanged;
     public event Action<IReadOnlyList<PlayerResponseOption>> ResponseStarted;
     public event Action<float, float> ResponseTimerChanged;
@@ -53,10 +55,12 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     public float ResponseWindowSeconds => responseWindowSeconds;
     public float CurrentResponseDurationSeconds { get; private set; }
     public string FailureMessage { get; private set; } = ConversationFailureMessage;
+    public string ActiveBlockId => activeBlock != null ? activeBlock.blockId : string.Empty;
 
     private void Awake()
     {
         EnsureTrafficSignalPrompt();
+        EnsureDialogueMusicGate();
     }
 
     private void Start()
@@ -131,6 +135,24 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         if (isTypewriterPlaying)
         {
             typewriterSkipRequested = true;
+            return;
+        }
+
+        if (waitingForNpcAdvance && !npcAdvanceLocked)
+        {
+            npcAdvanceRequested = true;
+        }
+    }
+
+    public void SetNpcAdvanceLocked(bool locked)
+    {
+        npcAdvanceLocked = locked;
+    }
+
+    public void ForceNpcAdvance()
+    {
+        if (CurrentPhase != DialoguePhase.NpcSpeaking || sequenceFailed)
+        {
             return;
         }
 
@@ -226,6 +248,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         for (int i = 0; i < fragments.Length; i++)
         {
             yield return PlayTypewriterFragment(fragments[i]);
+            NpcFragmentPresented?.Invoke(block, i, fragments.Length);
             yield return WaitForNpcAdvance();
         }
     }
@@ -426,6 +449,17 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         gameObject.AddComponent<TrafficSignalPromptController>();
     }
 
+    private void EnsureDialogueMusicGate()
+    {
+        if (!string.Equals(SceneManager.GetActiveScene().name, "Level3", StringComparison.OrdinalIgnoreCase) ||
+            GetComponent<DialogueMusicGateController>() != null)
+        {
+            return;
+        }
+
+        gameObject.AddComponent<DialogueMusicGateController>();
+    }
+
     private static bool IsDrivingMinigameScene(string sceneName)
     {
         return string.Equals(sceneName, "Level0", StringComparison.OrdinalIgnoreCase) ||
@@ -446,6 +480,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         npcAdvanceRequested = false;
         typewriterSkipRequested = false;
         isTypewriterPlaying = false;
+        npcAdvanceLocked = false;
     }
 
     private void BuildBlockLookup()
@@ -1067,7 +1102,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("He smiles."),
                 Q("And then one note that didn't really belong with the others.")
             },
-            "L3_B3_SETUP"));
+            "L3_B2_RADIO_ROCK_SETUP"));
 
         blocks.Add(Block(
             "L3_B2_B_REPLY",
@@ -1077,7 +1112,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("He shifts the portfolio against his knees."),
                 Q("But sometimes people forget to be either. That's when a note gets dangerous.")
             },
-            "L3_B3_SETUP"));
+            "L3_B2_RADIO_ROCK_SETUP"));
 
         blocks.Add(Block(
             "L3_B2_C_REPLY",
@@ -1087,7 +1122,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("A beat."),
                 Q("Or maybe they lie better. I haven't decided.")
             },
-            "L3_B3_SETUP"));
+            "L3_B2_RADIO_ROCK_SETUP"));
 
         blocks.Add(Block(
             "L3_B2_D_REPLY",
@@ -1098,7 +1133,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("He looks down at his coat pocket."),
                 Q("Yeah. I think so.")
             },
-            "L3_B3_SETUP"));
+            "L3_B2_RADIO_ROCK_SETUP"));
 
         blocks.Add(Block(
             "L3_B2_MISS",
@@ -1108,24 +1143,32 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 Q("Anyway, it was a good night. I think."),
                 N("The \"I think\" comes late.")
             },
-            "L3_B3_SETUP"));
+            "L3_B2_RADIO_ROCK_SETUP"));
 
         blocks.Add(Block(
-            "L3_B3_SETUP",
-            new[]
-            {
-                N("A long road along the back of the shopping district. Most signs are off. A few are still glowing blue-white."),
-                N("Owen takes his phone out, checks it, sees no new messages, puts it away. Then immediately takes it out again and locks the screen."),
-                Q("A girl from school came by tonight. I didn't see her during the show."),
-                N("He says it quickly. Too quickly to be casual."),
-                Q("Or maybe I did and didn't notice. Which is worse, probably."),
-                N("He rubs his thumb along the edge of the phone."),
-                Q("Vera."),
-                N("The name lands plainly. No dramatic sting. Just the missing piece being named because Owen has no reason not to."),
-                Q("She's in Fine Arts. Hartwell. Same year as me."),
-                N("Owen looks out the window."),
-                Q("She left before I found the note.")
-            },
+            "L3_B2_RADIO_ROCK_SETUP",
+            GetLevel3RadioRockSetupLines(),
+            "L3_B2_RADIO_ROCK_CONTINUE"));
+
+        blocks.Add(Block(
+            "L3_B2_RADIO_ROCK_CONTINUE",
+            GetLevel3RadioRockContinueLines(),
+            "L3_B3_SETUP_ROCK"));
+
+        blocks.Add(Block(
+            "L3_B4_RADIO_CLASSICAL_SETUP",
+            GetLevel3RadioClassicalSetupLines(),
+            "L3_B4_RADIO_CLASSICAL_CONTINUE"));
+
+        blocks.Add(Block(
+            "L3_B4_RADIO_CLASSICAL_CONTINUE",
+            GetLevel3RadioClassicalContinueLines(),
+            "L3_B5_SETUP"));
+
+        blocks.Add(Block(
+            "L3_B3_SETUP_ROCK",
+            GetLevel3Block3SetupLines(
+                N("A low rock track plays under the road noise. Owen taps once against his knee, then stops when he realizes he's doing it.")),
             "L3_B3_RESPONSE"));
 
         blocks.Add(ResponseBlock(
@@ -1227,7 +1270,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             -1,
             "L3_B4_MISS"));
 
-        blocks.Add(Block("L3_B4_A_REPLY", GetLevel3Block4AReplyLines(), "L3_B5_SETUP"));
+        blocks.Add(Block("L3_B4_A_REPLY", GetLevel3Block4AReplyLines(), "L3_B4_RADIO_CLASSICAL_SETUP"));
         blocks.Add(Block(
             "L3_B4_B_REPLY",
             new[]
@@ -1239,7 +1282,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("He laughs once, then stops."),
                 Q("I don't know what else to do with it yet.")
             },
-            "L3_B5_SETUP"));
+            "L3_B4_RADIO_CLASSICAL_SETUP"));
 
         blocks.Add(Block(
             "L3_B4_C_REPLY",
@@ -1251,7 +1294,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("A beat."),
                 Q("I know what I hope she meant.")
             },
-            "L3_B5_SETUP"));
+            "L3_B4_RADIO_CLASSICAL_SETUP"));
 
         blocks.Add(Block(
             "L3_B4_D_REPLY",
@@ -1262,10 +1305,10 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 N("A long pause."),
                 Q("That's exactly what it felt like. Like the note was the second sentence. Like the first one got lost somewhere before she reached the door.")
             },
-            "L3_B5_SETUP"));
+            "L3_B4_RADIO_CLASSICAL_SETUP"));
 
-        blocks.Add(Block("L3_B4_E_REPLY", GetLevel3Block4EReplyLines(), "L3_B5_SETUP"));
-        blocks.Add(Block("L3_B4_F_REPLY", GetLevel3Block4FReplyLines(), "L3_B5_SETUP"));
+        blocks.Add(Block("L3_B4_E_REPLY", GetLevel3Block4EReplyLines(), "L3_B4_RADIO_CLASSICAL_SETUP"));
+        blocks.Add(Block("L3_B4_F_REPLY", GetLevel3Block4FReplyLines(), "L3_B4_RADIO_CLASSICAL_SETUP"));
         blocks.Add(Block(
             "L3_B4_MISS",
             new[]
@@ -1274,7 +1317,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
                 Q("It was just a note. People leave notes."),
                 N("He does not believe this.")
             },
-            "L3_B5_SETUP"));
+            "L3_B4_RADIO_CLASSICAL_SETUP"));
 
         blocks.Add(Block(
             "L3_B5_SETUP",
@@ -2096,6 +2139,73 @@ public sealed class DialogueSequenceManager : MonoBehaviour
         }
 
         return lines.ToArray();
+    }
+
+    private string[] GetLevel3RadioRockSetupLines()
+    {
+        return new[]
+        {
+            N("The cab rolls under a string of orange streetlights. Owen taps two fingers against the paper tube, then stops when he notices he's doing it."),
+            Q("Can I ask for a weirdly specific favour?"),
+            N("He glances toward the dash, already half-embarrassed by the request."),
+            Q("Could you put on something with guitars? Rock, maybe."),
+            Q("I need something loud enough to stop me thinking for five seconds."),
+            N("(He wants something loud and guitar-heavy. Try switching to rock.)")
+        };
+    }
+
+    private string[] GetLevel3RadioRockContinueLines()
+    {
+        return new[]
+        {
+            N("The radio clicks through static and lands on a low, grainy rock track."),
+            N("Owen leans back for the first time since getting in."),
+            Q("Yeah. That. Perfect."),
+            N("For a moment, the silence in the cab stops feeling like something waiting to happen.")
+        };
+    }
+
+    private string[] GetLevel3RadioClassicalSetupLines()
+    {
+        return new[]
+        {
+            N("They stop at a light with no cross traffic. Owen watches the color slide across the window, then exhales."),
+            Q("Can I ask for a weirdly specific favour?"),
+            N("He smiles at himself, like he knows how unreasonable he's about to sound."),
+            Q("Could you put on something classical? Piano, if you've got it."),
+            Q("I think I need the sort of music that makes everything feel arranged on purpose for five seconds."),
+            N("(He wants something classical and ordered. Try switching to the waltz.)")
+        };
+    }
+
+    private string[] GetLevel3RadioClassicalContinueLines()
+    {
+        return new[]
+        {
+            N("The radio slips through static and settles on a bright piano waltz."),
+            N("Owen goes quiet long enough to hear the first phrase all the way through."),
+            Q("Yeah. That one."),
+            N("The cab doesn't get less strange. It just starts to feel more ordered.")
+        };
+    }
+
+    private string[] GetLevel3Block3SetupLines(string musicLeadLine)
+    {
+        return new[]
+        {
+            musicLeadLine,
+            N("A long road along the back of the shopping district. Most signs are off. A few are still glowing blue-white."),
+            N("Owen takes his phone out, checks it, sees no new messages, puts it away. Then immediately takes it out again and locks the screen."),
+            Q("A girl from school came by tonight. I didn't see her during the show."),
+            N("He says it quickly. Too quickly to be casual."),
+            Q("Or maybe I did and didn't notice. Which is worse, probably."),
+            N("He rubs his thumb along the edge of the phone."),
+            Q("Vera."),
+            N("The name lands plainly. No dramatic sting. Just the missing piece being named because Owen has no reason not to."),
+            Q("She's in Fine Arts. Hartwell. Same year as me."),
+            N("Owen looks out the window."),
+            Q("She left before I found the note.")
+        };
     }
 
     private string[] GetLevel3Block4AReplyLines()
