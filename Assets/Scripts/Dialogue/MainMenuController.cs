@@ -270,7 +270,7 @@ public sealed class MainMenuController : MonoBehaviour
             case "Level 2  Highway Focus":
             case "Route 2  Reserved":
                 return MainMenuButtonAction.ActionType.LaunchRoute2;
-            case "Level 3  Beihai Park Finale":
+            case "Route 3 Classmate":
             case "Route 3  Reserved":
                 return MainMenuButtonAction.ActionType.LaunchRoute3;
             case "Controls Placeholder":
@@ -443,7 +443,7 @@ public sealed class MainMenuController : MonoBehaviour
         title.color = SoftIvory;
         Stretch(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -54f), new Vector2(-28f, -8f));
 
-        Text desc = CreateText("Level Desc", panel, "Night routes open as passengers arrive. The Beihai Park finale is now listed on the board.", 22, TextAnchor.UpperLeft);
+        Text desc = CreateText("Level Desc", panel, "Night routes open as passengers arrive. Route 3 Classmate is now listed on the board.", 22, TextAnchor.UpperLeft);
         desc.horizontalOverflow = HorizontalWrapMode.Wrap;
         desc.verticalOverflow = VerticalWrapMode.Overflow;
         desc.color = new Color(0.83f, 0.85f, 0.86f, 1f);
@@ -458,7 +458,7 @@ public sealed class MainMenuController : MonoBehaviour
         Button futureRouteB = CreatePanelButton("Level 2  Highway Focus", panel, MainMenuButtonAction.ActionType.LaunchRoute2);
         Stretch(futureRouteB.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -426f), new Vector2(-28f, -346f));
 
-        Button futureRouteC = CreatePanelButton("Level 3  Beihai Park Finale", panel, MainMenuButtonAction.ActionType.LaunchRoute3);
+        Button futureRouteC = CreatePanelButton("Route 3 Classmate", panel, MainMenuButtonAction.ActionType.LaunchRoute3);
         Stretch(futureRouteC.GetComponent<RectTransform>(), new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -518f), new Vector2(-28f, -438f));
 
         Button closeButton = CreatePanelButton("Close", panel, MainMenuButtonAction.ActionType.ClosePanels);
@@ -630,12 +630,12 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
-        if (levelSelectPanel.Find("Level 3  Beihai Park Finale Button") != null)
+        if (levelSelectPanel.Find("Route 3 Classmate Button") != null)
         {
             return;
         }
 
-        Button route3Button = CreatePanelButton("Level 3  Beihai Park Finale", levelSelectPanel, MainMenuButtonAction.ActionType.LaunchRoute3);
+        Button route3Button = CreatePanelButton("Route 3 Classmate", levelSelectPanel, MainMenuButtonAction.ActionType.LaunchRoute3);
         RectTransform rect = route3Button.GetComponent<RectTransform>();
         rect.anchorMin = new Vector2(0f, 1f);
         rect.anchorMax = new Vector2(1f, 1f);

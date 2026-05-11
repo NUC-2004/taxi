@@ -189,7 +189,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Level 1  Office Worker
+  m_Text: Route 1  Office Worker
 --- !u!222 &71022163
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -250,6 +250,7 @@ MonoBehaviour:
   m_Script: {fileID: 131125430}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuButtonAction
+  actionType: 0
 --- !u!114 &106094382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1398,7 +1399,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Route 2  Reserved
+  m_Text: Route 2  The Retired Teacher
 --- !u!222 &657435460
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1477,7 +1478,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Level 0  First Pickup
+  m_Text: Route 0  First Pickup
 --- !u!222 &685561187
 CanvasRenderer:
   m_ObjectHideFlags: 0

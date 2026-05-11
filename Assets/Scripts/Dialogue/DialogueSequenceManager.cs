@@ -611,6 +611,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             "L0_B1_SETUP",
             new[]
             {
+                N("Click the left mouse button to continue."),
                 N("Just past eleven at night."),
                 N("The cab idles at the curb. The rear door opens."),
                 N("A young girl gets in, closes it quietly, and sets her bag on the seat beside her."),
