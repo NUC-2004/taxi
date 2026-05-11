@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -15,6 +16,7 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
         Green
     }
 
+    private const string Level2SceneName = "Level2";
     private const string Level3SceneName = "Level3";
     private const string RedSignalResourcePath = "Level3UI/TrafficSignalRed";
     private const string GreenSignalResourcePath = "Level3UI/TrafficSignalGreen";
@@ -22,9 +24,25 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
     private const int MissPenalty = -1;
     private const string FailureMessage = "(You miss the traffic cue. The ride breaks off before the conversation can continue.)";
 
+    private static readonly Dictionary<string, TrafficCueType> FixedCueByBlockId = new Dictionary<string, TrafficCueType>(StringComparer.Ordinal)
+    {
+        { "L2_B1_SETUP", TrafficCueType.Green },
+        { "L2_B2_SETUP", TrafficCueType.Red },
+        { "L2_B3_SETUP", TrafficCueType.Green },
+        { "L2_B4_SETUP", TrafficCueType.Red },
+        { "L2_B5_SETUP", TrafficCueType.Green },
+        { "L2_B6_SETUP", TrafficCueType.Red },
+        { "L3_B1_SETUP", TrafficCueType.Green },
+        { "L3_B2_SETUP", TrafficCueType.Red },
+        { "L3_B3_SETUP", TrafficCueType.Green },
+        { "L3_B4_SETUP", TrafficCueType.Red },
+        { "L3_B5_SETUP", TrafficCueType.Green }
+    };
+
     private DialogueSequenceManager dialogueManager;
     private RectTransform promptRoot;
     private Image signalImage;
+    private Image instructionBackdrop;
     private Text instructionText;
     private Text countdownText;
     private Text keyHintText;
@@ -59,7 +77,7 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
 
     private void Update()
     {
-        if (!IsLevel3Scene())
+        if (!IsSupportedScene())
         {
             return;
         }
@@ -128,13 +146,13 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
         queuedCueType = TrafficCueType.None;
         queuedBlockId = currentBlockId;
 
-        if (!IsEligiblePromptBlock(block))
+        queuedCueType = GetFixedCueType(block);
+        if (queuedCueType == TrafficCueType.None)
         {
             HidePromptUi();
             return;
         }
 
-        queuedCueType = RollCueType();
         queuedBlockId = currentBlockId;
         hasQueuedCue = true;
     }
@@ -228,20 +246,24 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
         signalImage.preserveAspect = true;
         Stretch(signalImage.rectTransform, new Vector2(0.1f, 0.4f), new Vector2(0.9f, 0.94f), Vector2.zero, Vector2.zero);
 
-        instructionText = CreateText("Instruction Text", promptRoot, string.Empty, 24, TextAnchor.MiddleCenter);
-        instructionText.color = new Color(0.96f, 0.97f, 0.95f, 0.98f);
-        Stretch(instructionText.rectTransform, new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.38f), Vector2.zero, Vector2.zero);
+        instructionBackdrop = CreateImage("Instruction Backdrop", promptRoot, new Color(0.25f, 0.3f, 0.31f, 1f));
+        DialogueUILayer.ApplyOptionButtonVisualStyle(instructionBackdrop);
+        Stretch(instructionBackdrop.rectTransform, new Vector2(0.08f, 0.215f), new Vector2(0.92f, 0.335f), Vector2.zero, Vector2.zero);
 
-        countdownText = CreateText("Countdown Text", promptRoot, "5", 96, TextAnchor.MiddleCenter);
+        instructionText = CreateText("Instruction Text", promptRoot, string.Empty, 28, TextAnchor.MiddleCenter);
+        DialogueUILayer.ApplyOptionButtonLabelStyle(instructionText);
+        Stretch(instructionText.rectTransform, new Vector2(0.08f, 0.215f), new Vector2(0.92f, 0.335f), new Vector2(12f, 4f), new Vector2(-12f, -4f));
+
+        countdownText = CreateText("Countdown Text", promptRoot, "5", 126, TextAnchor.MiddleCenter);
         countdownText.color = new Color(1f, 0.97f, 0.9f, 0.95f);
         countdownText.raycastTarget = false;
-        Stretch(countdownText.rectTransform, new Vector2(0.18f, 0.02f), new Vector2(0.82f, 0.2f), Vector2.zero, Vector2.zero);
+        Stretch(countdownText.rectTransform, new Vector2(0.12f, 0.01f), new Vector2(0.88f, 0.22f), Vector2.zero, Vector2.zero);
         Shadow countdownShadow = countdownText.gameObject.AddComponent<Shadow>();
         countdownShadow.effectColor = new Color(0f, 0f, 0f, 0.72f);
         countdownShadow.effectDistance = new Vector2(3f, -3f);
 
         keyHintText = CreateText("Key Hint Text", promptRoot, string.Empty, 22, TextAnchor.LowerCenter);
-        keyHintText.color = new Color(0.9f, 0.92f, 0.94f, 0.9f);
+        keyHintText.color = Color.clear;
         Stretch(keyHintText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.1f), new Vector2(10f, 0f), new Vector2(-10f, 12f));
         keyHintText.gameObject.SetActive(false);
 
@@ -272,14 +294,10 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
         signalImage.sprite = isRed ? redSignalSprite : greenSignalSprite;
         signalImage.enabled = signalImage.sprite != null;
 
-        Color cueColor = isRed ? new Color(0.98f, 0.4f, 0.35f, 1f) : new Color(0.42f, 0.96f, 0.56f, 1f);
-        instructionText.text = isRed ? "Red light · press S within 5s" : "Green light · press W within 5s";
-        instructionText.color = cueColor;
         instructionText.text = isRed ? "Red light - press S within 5s" : "Green light - press W within 5s";
-        keyHintText.text = isRed ? "Brake cue: S" : "Go cue: W";
-        keyHintText.color = new Color(cueColor.r, cueColor.g, cueColor.b, 0.94f);
+        instructionText.color = Color.white;
         keyHintText.text = string.Empty;
-        keyHintText.color = new Color(cueColor.r, cueColor.g, cueColor.b, 0f);
+        keyHintText.color = Color.clear;
     }
 
     private void RefreshCountdownVisual()
@@ -339,33 +357,23 @@ public sealed class TrafficSignalPromptController : MonoBehaviour
             100f);
     }
 
-    private static bool IsEligiblePromptBlock(NpcSpeakingBlock block)
+    private static TrafficCueType GetFixedCueType(NpcSpeakingBlock block)
     {
-        return block != null &&
-               !string.IsNullOrWhiteSpace(block.blockId) &&
-               block.blockId.StartsWith("L3_B", StringComparison.Ordinal) &&
-               block.blockId.EndsWith("_SETUP", StringComparison.Ordinal);
-    }
-
-    private static TrafficCueType RollCueType()
-    {
-        float roll = UnityEngine.Random.value;
-        if (roll < 0.25f)
+        if (block == null || string.IsNullOrWhiteSpace(block.blockId))
         {
-            return TrafficCueType.Red;
+            return TrafficCueType.None;
         }
 
-        if (roll < 0.5f)
-        {
-            return TrafficCueType.Green;
-        }
-
-        return TrafficCueType.None;
+        return FixedCueByBlockId.TryGetValue(block.blockId, out TrafficCueType cueType)
+            ? cueType
+            : TrafficCueType.None;
     }
 
-    private static bool IsLevel3Scene()
+    private static bool IsSupportedScene()
     {
-        return string.Equals(SceneManager.GetActiveScene().name, Level3SceneName, StringComparison.OrdinalIgnoreCase);
+        string sceneName = SceneManager.GetActiveScene().name;
+        return string.Equals(sceneName, Level2SceneName, StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(sceneName, Level3SceneName, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool WasRequiredKeyPressed()

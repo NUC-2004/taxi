@@ -412,7 +412,12 @@ public sealed class DialogueSequenceManager : MonoBehaviour
 
     private void EnsureTrafficSignalPrompt()
     {
-        if (!string.Equals(SceneManager.GetActiveScene().name, "Level3", StringComparison.OrdinalIgnoreCase) ||
+        string sceneName = SceneManager.GetActiveScene().name;
+        bool shouldUseTrafficSignalPrompt =
+            string.Equals(sceneName, "Level2", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(sceneName, "Level3", StringComparison.OrdinalIgnoreCase);
+
+        if (!shouldUseTrafficSignalPrompt ||
             GetComponent<TrafficSignalPromptController>() != null)
         {
             return;
@@ -1368,7 +1373,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
             CreateLevel3Block6Options(),
             0,
             null,
-            0f));
+            -1f));
 
         blocks.Add(Block(
             "L3_END_REPLY",

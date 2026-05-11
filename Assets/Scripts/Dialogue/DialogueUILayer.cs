@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.EventSystems;
@@ -46,6 +47,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private static readonly Color OptionSelectedColor = new Color(0.95f, 0.82f, 0.22f, 1f);
     private static readonly Color OptionLockedColor = new Color(0.14f, 0.16f, 0.17f, 0.88f);
     private static readonly Color OptionLockedTextColor = new Color(0.62f, 0.66f, 0.66f, 1f);
+    private static readonly Rect Level3ExpressionCropRect = new Rect(96f, 256f, 1344f, 664f);
 
     private Text phaseText;
     private Text npcText;
@@ -73,6 +75,7 @@ public sealed class DialogueUILayer : MonoBehaviour
     private readonly List<Button> optionButtons = new List<Button>();
     private readonly List<Text> optionButtonLabels = new List<Text>();
     private readonly List<PlayerResponseOption> activeOptions = new List<PlayerResponseOption>();
+    private readonly Dictionary<string, Sprite> runtimeExpressionSpriteCache = new Dictionary<string, Sprite>();
     private int selectedOptionIndex = -1;
     private bool isPaused;
     private bool isMouseConfirming;
@@ -1778,7 +1781,7 @@ public sealed class DialogueUILayer : MonoBehaviour
                 break;
         }
 
-        Sprite sprite = LoadSpriteFromResourcePath(path);
+        Sprite sprite = LoadExpressionSpriteForDisplay(path);
         expressionImage.sprite = sprite;
         expressionImage.enabled = sprite != null;
         expressionImage.color = Color.white;
@@ -1791,6 +1794,37 @@ public sealed class DialogueUILayer : MonoBehaviour
                 expressionFallbackText.text = "Expression importing...\nIf it stays blank, set the PNG import type to Sprite (2D and UI).";
             }
         }
+    }
+
+    private Sprite LoadExpressionSpriteForDisplay(string resourcePath)
+    {
+        if (!IsLevel3ExpressionResourcePath(resourcePath))
+        {
+            return LoadSpriteFromResourcePath(resourcePath);
+        }
+
+        if (runtimeExpressionSpriteCache.TryGetValue(resourcePath, out Sprite cachedSprite) && cachedSprite != null)
+        {
+            return cachedSprite;
+        }
+
+        Texture2D texture = Resources.Load<Texture2D>(resourcePath);
+        if (texture == null)
+        {
+            Sprite fallbackSprite = LoadSpriteFromResourcePath(resourcePath);
+            if (fallbackSprite == null || fallbackSprite.texture == null)
+            {
+                return fallbackSprite;
+            }
+
+            texture = fallbackSprite.texture;
+        }
+
+        Rect cropRect = ClampRectToTexture(Level3ExpressionCropRect, texture.width, texture.height);
+        Sprite sprite = Sprite.Create(texture, cropRect, new Vector2(0.5f, 0.5f), 100f);
+        sprite.name = resourcePath.Replace('/', '_') + "_Cropped";
+        runtimeExpressionSpriteCache[resourcePath] = sprite;
+        return sprite;
     }
 
     private Sprite LoadSpriteFromResourcePath(string resourcePath)
@@ -1835,6 +1869,23 @@ public sealed class DialogueUILayer : MonoBehaviour
             new Rect(0f, 0f, texture.width, texture.height),
             new Vector2(0.5f, 0.5f),
             100f);
+    }
+
+    private static bool IsLevel3ExpressionResourcePath(string resourcePath)
+    {
+        return string.Equals(resourcePath, "Level3UI/Level3Calm", StringComparison.Ordinal) ||
+               string.Equals(resourcePath, "Level3UI/Level3Angry", StringComparison.Ordinal) ||
+               string.Equals(resourcePath, "Level3UI/Level3HappyTransparent", StringComparison.Ordinal) ||
+               string.Equals(resourcePath, "Level3UI/Level3Happy", StringComparison.Ordinal);
+    }
+
+    private static Rect ClampRectToTexture(Rect rect, int textureWidth, int textureHeight)
+    {
+        float x = Mathf.Clamp(rect.x, 0f, Mathf.Max(0f, textureWidth - 1f));
+        float y = Mathf.Clamp(rect.y, 0f, Mathf.Max(0f, textureHeight - 1f));
+        float width = Mathf.Clamp(rect.width, 1f, textureWidth - x);
+        float height = Mathf.Clamp(rect.height, 1f, textureHeight - y);
+        return new Rect(x, y, width, height);
     }
 
     private void UpdatePortraitPhaseTint(DialoguePhase phase)
@@ -2019,9 +2070,35 @@ public sealed class DialogueUILayer : MonoBehaviour
         return label;
     }
 
+    public static void ApplyOptionButtonVisualStyle(Image image)
+    {
+        if (image == null)
+        {
+            return;
+        }
+
+        image.color = OptionNormalColor;
+    }
+
+    public static void ApplyOptionButtonLabelStyle(Text label)
+    {
+        if (label == null)
+        {
+            return;
+        }
+
+        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        label.fontSize = 26;
+        label.alignment = TextAnchor.MiddleCenter;
+        label.color = Color.white;
+        label.raycastTarget = false;
+    }
+
     private static Button CreateButton(string name, Transform parent, string labelText)
     {
         Image image = CreateImage(name, parent, OptionNormalColor);
+        ApplyOptionButtonVisualStyle(image);
+        image.raycastTarget = true;
         Button button = image.gameObject.AddComponent<Button>();
         button.transition = Selectable.Transition.None;
         ColorBlock colors = button.colors;
@@ -2032,6 +2109,7 @@ public sealed class DialogueUILayer : MonoBehaviour
         button.colors = colors;
 
         Text label = CreateText("Label", image.transform, labelText, 26, TextAnchor.MiddleCenter);
+        ApplyOptionButtonLabelStyle(label);
         Stretch(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(12f, 4f), new Vector2(-12f, -4f));
         return button;
     }
