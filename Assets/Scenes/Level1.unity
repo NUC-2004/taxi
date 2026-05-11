@@ -169,7 +169,7 @@ MonoBehaviour:
   secondsPerNpcFragment: 1
   extraNpcFragmentHoldSeconds: 0.3
   typewriterCharacterInterval: 0.02
-  responseWindowSeconds: 6
+  responseWindowSeconds: 10
   betweenBlocksDelaySeconds: 0.45
   defaultNoResponseAffectionDelta: -12
   initialAffection: 5

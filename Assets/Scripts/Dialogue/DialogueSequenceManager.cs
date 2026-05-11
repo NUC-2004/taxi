@@ -12,7 +12,7 @@ public sealed class DialogueSequenceManager : MonoBehaviour
     public float secondsPerNpcFragment = 1.7f;
     public float extraNpcFragmentHoldSeconds = 0.5f;
     public float typewriterCharacterInterval = 0.035f;
-    public float responseWindowSeconds = 6f;
+    public float responseWindowSeconds = 10f;
     public float betweenBlocksDelaySeconds = 0.45f;
     public int defaultNoResponseAffectionDelta = -12;
 

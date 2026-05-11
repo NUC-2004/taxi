@@ -925,13 +925,7 @@ public sealed class DialogueUILayer : MonoBehaviour
                 continue;
             }
 
-            PauseMenuButtonAction action = buttons[i].GetComponent<PauseMenuButtonAction>();
-            if (action == null)
-            {
-                action = buttons[i].gameObject.AddComponent<PauseMenuButtonAction>();
-            }
-
-            action.SetAction(actionType.Value);
+            SetPauseButtonAction(buttons[i], actionType.Value);
         }
     }
 
@@ -955,6 +949,9 @@ public sealed class DialogueUILayer : MonoBehaviour
             case "回到主菜单":
                 return PauseMenuButtonAction.ActionType.ReturnToMainMenu;
             case "Continue Game":
+            case "Continue to Level 1":
+            case "Continue to Level 2":
+            case "Continue to Level 3":
             case "Retry":
             case "继续游戏":
                 return PauseMenuButtonAction.ActionType.ContinueGame;
@@ -970,14 +967,17 @@ public sealed class DialogueUILayer : MonoBehaviour
             return;
         }
 
-        PauseMenuButtonAction action = button.GetComponent<PauseMenuButtonAction>();
-        if (action == null)
+        PauseMenuButtonAction[] actions = button.GetComponents<PauseMenuButtonAction>();
+        if (actions.Length == 0)
         {
-            action = button.gameObject.AddComponent<PauseMenuButtonAction>();
+            actions = new[] { button.gameObject.AddComponent<PauseMenuButtonAction>() };
         }
 
-        action.SetAction(actionType);
-        action.Rebind();
+        for (int i = 0; i < actions.Length; i++)
+        {
+            actions[i].SetAction(actionType);
+            actions[i].Rebind();
+        }
     }
 
     private RectTransform FindRect(string path)
